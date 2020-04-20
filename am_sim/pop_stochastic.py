@@ -7,8 +7,8 @@ class stoch_pop:
     '''
     Stochastic population function class. It consists of a population of
     cells, each one characterized by its binding energy for the Ag.
-    The class features methods for duplication, mutation and selection of the
-    population.
+    The class features methods for duplication, mutation, selection and
+    differentiation of the B-cell population.
 
     The class displays the following methods:
     - __init__: default class constructor
@@ -21,7 +21,7 @@ class stoch_pop:
         rest
     - select_with_psurv: given a survival probability it stochastically removes
         cells according to that probability
-    - differentiate: implements cell differentiation and return the
+    - differentiate: implements cell differentiation and returns the
         differentiated MC/PC populations
     - carrying_cap: implements a finite carrying capacity
     - add_mutations: implements random cell mutations (silent + lethal + a.a.)
@@ -29,14 +29,14 @@ class stoch_pop:
         occur during a single evolution round.
     - bareps: returns the current value of bar-epsilon for the population
     - N: returns the current population size
-    - energies: return the population's binding energies.
+    - energies: return the population's binding energies (by reference!)
     '''
 
     def __init__(self, par, mc_seed=None, trace_clonotypes=False):
         '''
         Initializes the population using the parameter set specified.
 
-        Parameters:
+        Args:
         - par: the parameters dictionary
         - mc_seed (stoch_pop object, optional): MC population. If specified
             then the founders are extracted randomly either from the naive
@@ -68,7 +68,7 @@ class stoch_pop:
         '''
         Initialize a population object from simply the energy of the cells.
 
-        Parameters:
+        Args:
         - en (array): list of energies of the newly-instantiated population.
         '''
         pop = cls.__new__(cls)
@@ -91,7 +91,7 @@ class stoch_pop:
         Merges the energy of two populations. NB: this operation is not
         compatible with clonotype tracing.
 
-        Parameters:
+        Args:
         - pop_add (stoch_pop object): population of cells whose energy is to
             be merged with the current population.
         '''
@@ -113,7 +113,7 @@ class stoch_pop:
         Utility function to keep only the cells specified in the mask and
         eliminate the rest.
 
-        Parameters:
+        Args:
         - mask (array of bool): boolean array of cells to keep.
         '''
         self.en = self.en[mask]
@@ -126,7 +126,7 @@ class stoch_pop:
         cell in the population, it implements random selection with the
         specified probability.
 
-        Parameters:
+        Args:
         - psurv (array of float): array containing the survival probability for
             each cell in the population. NB: probabilities must be in the same
             order as the cells.
@@ -142,7 +142,7 @@ class stoch_pop:
         the differentiated cells from the population and returns the energies
         of the differentiated PCs and MCs.
 
-        Parameters:
+        Args:
         - prob_mc, prob_pc (float): probability of MC / PC fate.
         '''
         # 0 for no differentiation, 1 for MC fate and 2 for PC fate
@@ -165,7 +165,7 @@ class stoch_pop:
         size exceed the 'GC_carry_capacity' threshold then the excess cells are
         discarded randomly.
 
-        Parameters:
+        Args:
         - par: model parameters dictionary
         '''
         N_en = self.en.size  # population current size
@@ -183,7 +183,7 @@ class stoch_pop:
         according to the model definition and can be either silent, lethal or
         affinity-affecting.
 
-        Parameters:
+        Args:
         - par: model parameters dictionary
         '''
         # also lethal mutations
@@ -203,7 +203,7 @@ class stoch_pop:
         This function implements the population expansion part of the evolution
         round, featuring multiple cell duplications with mutation.
 
-        Parameters:
+        Args:
         - par: model parameters dictionary
         '''
         for _ in range(par['n_duplications']):

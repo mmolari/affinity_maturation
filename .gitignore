@@ -1,4 +1,3 @@
-
 # Created by https://www.gitignore.io/api/macos,python,jupyternotebooks
 # Edit at https://www.gitignore.io/?templates=macos,python,jupyternotebooks
 
@@ -150,3 +149,11 @@ dmypy.json
 .pyre/
 
 # End of https://www.gitignore.io/api/macos,python,jupyternotebooks
+
+# do not add any notebook unless specified
+*.ipynb
+
+# do not add any figure
+*.pdf
+*.png
+*.svg
