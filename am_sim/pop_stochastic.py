@@ -30,6 +30,7 @@ class stoch_pop:
     - bareps: returns the current value of bar-epsilon for the population
     - N: returns the current population size
     - energies: return the population's binding energies (by reference!)
+    - mean_en: returns the mean energy of the population
     '''
 
     def __init__(self, par, mc_seed=None, trace_clonotypes=False):
@@ -73,7 +74,7 @@ class stoch_pop:
         '''
         pop = cls.__new__(cls)
         pop.en = np.array(en)
-        self.tct = False
+        pop.tct = False
         return pop
 
     @classmethod
@@ -83,7 +84,7 @@ class stoch_pop:
         '''
         pop = cls.__new__(cls)
         pop.en = np.array([])
-        self.tct = False
+        pop.tct = False
         return pop
 
     def merge_with(self, pop_add):
@@ -169,10 +170,10 @@ class stoch_pop:
         - par: model parameters dictionary
         '''
         N_en = self.en.size  # population current size
-        if N_en > par['GC_carry_capacity']:
+        if N_en > par['GC_carrying_capacity']:
             # randomly select the id of cells that will be kept
             surv_id = np.random.choice(
-                np.arange(self.en.size), size=par['GC_carry_capacity'], replace=False)
+                np.arange(self.en.size), size=par['GC_carrying_capacity'], replace=False)
             mask_in = np.zeros_like(self.en, dtype=np.bool)
             mask_in[surv_id] = True
             self.keep_only(mask_in)
@@ -190,9 +191,9 @@ class stoch_pop:
         sil, aa, let = par['p_sil_eff'], par['p_aa_eff'], par['p_let_eff']
         outcome = np.random.choice(
             [0, 1, 2], size=self.en.size, p=[sil, aa, let])
-        # add aa mutation energy (before removing!!!)
+        # add aa mutation energy effect
         mask_mut = outcome == 1
-        delta_en = generate_stoch_mutations(self.par, mask_mut.sum())
+        delta_en = generate_stoch_mutations(par, mask_mut.sum())
         self.en[mask_mut] += delta_en
         # clean out lethal mutations
         mask_out = outcome == 2
@@ -230,3 +231,13 @@ class stoch_pop:
         Therefore one must be careful not to modify them!
         '''
         return self.en
+
+    def mean_en(self):
+        '''
+        returns the mean binding energy of the population. It returns None if
+        the population is empty.
+        '''
+        if self.en.size > 0:
+            return self.en.mean()
+        else:
+            return None

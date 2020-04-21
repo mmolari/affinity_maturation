@@ -41,7 +41,7 @@ class germinal_center:
         self.t_days = t_inj
         self.t_rounds = 0
         # day of GC formation
-        self.t_formation = par['T_GC_formation_days'] + t_days
+        self.t_formation = par['T_GC_formation_days'] + t_inj
         # initialize population, either stochastic or deterministic evolution
         if GC_type == 'stochastic':
             self.pop_class = stoch_pop
@@ -70,10 +70,14 @@ class germinal_center:
     def __evolve_mature(self):
         '''
         Utility function to perform an evolution round. It implements cell
-        duplication, mutation, selection, differentiation and GC carrying
+        differentiation, duplication, mutation, selection, and GC carrying
         capacity. It returns the populations of differentiated MCs and PCs.
         '''
         # --- evolve population
+        # differentiation
+        p_mc, p_pc = prob_mc_pc_differentiation(self.par, self.t_rounds)
+        MC, PC = self.pop.differentiate(p_mc, p_pc)
+
         # duplication and mutation
         self.pop.expand(self.par)
 
@@ -90,12 +94,8 @@ class germinal_center:
                                  C=self.ag.C, par=self.par)
             self.pop.select_with_psurv(psurv_T)
 
-        # differentiation
-        p_mc, p_pc = prob_mc_pc_differentiation(self.par, self.t_rounds)
-        MC, PC = self.pop.differentiate(p_mc, p_pc)
-
         # carrying capacity
-        self.pop.carry_capacity(self.par)
+        self.pop.carrying_cap(self.par)
 
         # --- evolve Ag concentration
         self.ag.evolve(NB=self.pop.N_cells())
@@ -126,17 +126,16 @@ class germinal_center:
             self.__evolve_maturing()
             # check if maturation has been reached
             if self.t_days >= self.t_formation:
-                # if so then update state and perform a single differentiation
+                # if so then update state
                 self.state = 'mature'
-                p_mc, p_pc = prob_mc_pc_differentiation(
-                    self.par, self.t_rounds)
-                MC, PC = self.pop.differentiate(p_mc, p_pc)
         # if mature perform standard evolution round
-        elif state == 'mature':
+        elif self.state == 'mature':
             MC, PC = self.__evolve_mature()
             # if extinct change state
             if self.pop.N_cells() < 1:
-                self.state == 'extinct'
+                self.state = 'extinct'
+                # erase remaining population (deterministic case)
+                self.pop = self.pop_class.create_empty(self.par)
         # evolves time
         self.t_days += self.par['days_per_turn']
         self.t_rounds += 1

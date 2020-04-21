@@ -30,6 +30,7 @@ class det_pop:
     - bareps: returns the current value of bar-epsilon for the population
     - N: returns the current population size
     - energies: returns the energy domain of the distribution (by reference!)
+    - mean_en: returns the mean energy of the population
     '''
 
     def __init__(self, par, mc_seed=None):
@@ -133,8 +134,11 @@ class det_pop:
         and report the modification to the population size. This method should
         remain private.
         '''
+        # evaluate the current normalization of the distribution
         N_factor = np.sum(self.varphi) * self.dx
+        # update population size with the resulting factor
         self.N *= N_factor
+        # renormalize the distribution
         self.varphi /= N_factor
 
     def select_with_psurv(self, psurv_x):
@@ -146,7 +150,9 @@ class det_pop:
         - psurv_x (float array): this array should contain the survival
             probability as a function of the energy domain of the distribution.
         '''
+        # multiply the distribution by the probability of survival
         self.varphi *= psurv_x
+        # renormalize the distribution and update population size
         self.__renormalize_varphi()
 
     def differentiate(self, prob_mc, prob_pc):
@@ -162,10 +168,14 @@ class det_pop:
         - MC_pop. PC_pop (det_pop objects): populations of differentiated
             MCs and PCs
         '''
+        # create differentiated MC population from a copy of the current pop
         MC_pop = self.create_copy_without_kernel()
+        # multiplied by the probability of differentiation
         MC_pop.N *= prob_mc
+        # same for the plasma cell population
         PC_pop = self.create_copy_without_kernel()
         PC_pop.N *= prob_pc
+        # remove the differentiated cells from the population size
         self.N *= (1 - prob_mc - prob_pc)
 
         return MC_pop, PC_pop
@@ -177,7 +187,8 @@ class det_pop:
         Args:
         - par: model parameters dictionary
         '''
-        self.N = np.min([self.N, par['GC_carr_cap']])
+        # if population size exceeds the carrying capacity remove the excess
+        self.N = np.min([self.N, par['GC_carrying_capacity']])
 
     def expand(self, *args):
         '''
@@ -187,6 +198,7 @@ class det_pop:
         # perform convolution (amplification + mutation multiple times)
         self.varphi = np.convolve(self.ker, self.varphi,
                                   'same') * self.dx
+        # renormalize the distribution and update population size
         self.__renormalize_varphi()
 
     def bareps(self):
@@ -194,7 +206,7 @@ class det_pop:
         This function evaluate and returns the current value of bar-epsilon
         for the population.
         '''
-        beps = -np.log(np.dot(varphi, np.exp(-self.x)) * self.dx)
+        beps = -np.log(np.dot(self.varphi, np.exp(-self.x)) * self.dx)
         return beps
 
     def N_cells(self):
@@ -209,3 +221,14 @@ class det_pop:
         Therefore one must be careful not to modify them!
         '''
         return self.x
+
+    def mean_en(self):
+        '''
+        returns the mean binding energy of the population. It returns None if
+        the population is empty.
+        '''
+        norm = np.sum(self.varphi) * self.dx
+        if norm > 0:
+            return np.dot(self.x, self.varphi) * self.dx / norm
+        else:
+            return None

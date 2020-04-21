@@ -129,11 +129,11 @@ def prob_mc_pc_differentiation(par, t_rounds):
     # if switch time but no sigma then hard switch
     elif sigma_t is None:
         p_main, p_res = p_diff * (1. - residual_f), p_diff * residual_f
-        return (p_main, p_res) if t <= sw_t else (p_res, p_main)
+        return (p_main, p_res) if t_rounds <= sw_t else (p_res, p_main)
     # else sigmoid switch
     else:
         fr_mc = residual_f + (1. - 2. * residual_f) / \
-            (1. + np.exp((t - sw_t) / sigma_t))
+            (1. + np.exp((t_rounds - sw_t) / sigma_t))
         return p_diff * fr_mc, p_diff * (1. - fr_mc)
 
 # --- GC seeding (stochastic GC)
@@ -229,3 +229,11 @@ def mutation_kernel(par):
         ker_tot = np.convolve(ker_tot, ker_one, 'same') * dx
 
     return ker_x, ker_tot
+
+
+# --- responders population
+
+def evaluate_responders(MC, PC, g_mem, kind):  #  function for immscheme
+    '''
+    '''
+    pass
