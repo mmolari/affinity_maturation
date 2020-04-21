@@ -20,7 +20,7 @@ We are interested in knowing:
 '''
 
 
-def simulate_immascheme(self, kind, D_inj, T_delay, measure, par):
+def simulate_immscheme(self, kind, D_inj, T_delay, measure, par):
 
     # conversion Dose -> Concentration
     C_inj = np.array(D_inj) / par['alpha_C']

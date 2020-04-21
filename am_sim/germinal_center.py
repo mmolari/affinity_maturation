@@ -54,17 +54,21 @@ class germinal_center:
         # instantiate state (maturing - mature - extinct)
         self.state = 'maturing'
 
-    def __evolve_maturing(self):
+    def __evolve_ag(self):
         '''
-        Utility method to evolve a maturing GC. It simply evolves the Ag
-        concentration considering an exponentially increasing population of
-        B-cells.
+        Utility method to evolve ag concentration in GC. If the GC is maturing
+        then the number of Ag-consuming B-cells grows exponentially. If the GC
+        is mature instead the number is simply the size of the B-cell
+        population.
         '''
-        # consider an exponentially increasing number of cells
-        exponent = self.t_rounds * \
-            self.par['days_per_turn'] / self.par['T_GC_formation_days']
-        NB = np.power(self.par['N_i'], exponent)
-        # evolve concentration accordingly
+        if self.state == 'maturing':  #  if the GC is maturing
+            # consider an exponentially increasing number of cells
+            exponent = self.t_rounds * \
+                self.par['days_per_turn'] / self.par['T_GC_formation_days']
+            NB = np.power(self.par['N_i'], exponent)
+            # evolve concentration accordingly
+        elif self.state == 'mature':  # if it is mature instead
+            NB = self.pop.N_cells()
         self.ag.evolve(NB=NB)
 
     def __evolve_mature(self):
@@ -97,9 +101,6 @@ class germinal_center:
         # carrying capacity
         self.pop.carrying_cap(self.par)
 
-        # --- evolve Ag concentration
-        self.ag.evolve(NB=self.pop.N_cells())
-
         return MC, PC
 
     def evolve_one_round(self):
@@ -118,12 +119,19 @@ class germinal_center:
             populations containing MCs/PCs generated during the round. These
             could be empty populations.
         '''
+        # evolve Ag concentration
+        self.__evolve_ag()
+
+        # evolves time
+        self.t_days += self.par['days_per_turn']
+        self.t_rounds += 1
+
         # create empty MC and PC populations
         MC = self.pop_class.create_empty(self.par)
         PC = self.pop_class.create_empty(self.par)
         # if maturing then evolve Ag concentration
         if self.state == 'maturing':
-            self.__evolve_maturing()
+            # self.__evolve_maturing()
             # check if maturation has been reached
             if self.t_days >= self.t_formation:
                 # if so then update state
@@ -136,8 +144,6 @@ class germinal_center:
                 self.state = 'extinct'
                 # erase remaining population (deterministic case)
                 self.pop = self.pop_class.create_empty(self.par)
-        # evolves time
-        self.t_days += self.par['days_per_turn']
-        self.t_rounds += 1
+
         # returns PCs and MCs
         return MC, PC

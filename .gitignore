@@ -157,3 +157,6 @@ dmypy.json
 *.pdf
 *.png
 *.svg
+
+# ignore folder with old library
+old_library
