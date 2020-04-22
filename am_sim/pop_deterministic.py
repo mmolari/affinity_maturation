@@ -121,12 +121,18 @@ class det_pop:
         Args:
         - pop_add (det_pop object): population to be merged with the caller.
         '''
-        # weight of the normalized distribution sum
-        w = self.N / (self.N + pop_add.N)
-        # merge distributions
-        self.varphi = self.varphi * w + pop_add.varphi * (1. - w)
-        # add up sizes
-        self.N += pop_add.N
+        if self.N > 0:
+            # weight of the normalized distribution sum
+            w = self.N / (self.N + pop_add.N)
+            # merge distributions
+            self.varphi = self.varphi * w + pop_add.varphi * (1. - w)
+            # add up sizes
+            self.N += pop_add.N
+        else:
+            # if the caller population is empty then the result is simply the
+            # added population
+            self.N = pop_add.N
+            self.varphi = pop_add.varphi
 
     def __renormalize_varphi(self):
         '''

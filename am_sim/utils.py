@@ -3,6 +3,7 @@ This file containst utilities to be used in the other libraries.
 '''
 import numpy as np
 import scipy.stats as sps
+import copy
 
 
 # --- meta-dictionary
@@ -231,9 +232,87 @@ def mutation_kernel(par):
     return ker_x, ker_tot
 
 
-# --- responders population
+# --- evaluate responders population
 
-def evaluate_responders(MC, PC, g_mem, kind):  #  function for immscheme
+def evaluate_responders(MC, PC, g_mem, sim_type, N_res):
     '''
+    This function evaluates the population of responder cells elicited by the
+    immunization scheme. It is defined as a weighted mixture of MCs and PCs,
+    containing a fraction 'g_mem' of memory cells.
+
+    Args:
+    - MC, PC (stoch_pop/det_pop objects): memory and plasma cell populations
+        collected during the immunization scheme
+    - g_mem (float): memory cell fraction of the responder population.
+    - sim_type (string): either 'stochastic' or 'deterministic', depending on
+        the class of the MC/PC populations
+    - N_res (int): responder population desired size.
+
+    Returns:
+    - resp_pop (stoch_pop/det_pop object): population of responder cells.
     '''
-    pass
+    if sim_type == 'stochastic':
+        resp_pop = stoch_responders(MC, PC, g_mem, N_res=N_res)
+    elif sim_type == 'deterministic':
+        resp_pop = det_responders(MC, PC, g_mem, N_res=N_res)
+    else:
+        raise Exception('sim_type must be either stochastic or deterministic')
+    return resp_pop
+
+
+def stoch_responders(MC, PC, g_mem, N_res):
+    '''
+    Generates a mixture of MC and PC populations, with fraction g_mem of memory
+    cells. A total of N_res cells is randomly picked from the two populations,
+    with replacement if necessary.
+
+    Args:
+    - MC, PC: (stoch_pop objects): memory and plasma cell populations collected
+        during the immunization scheme
+    - g_mem (float): memory cell fraction of the responder population.
+    - N_res (int): total number of cells in the responder population.
+
+    Returns:
+    - resp_pop (stoch_pop object): responder population
+    '''
+    # set number of MCs in resp_pop (only MCs if no PCs are present)
+    if PC.N_cells() == 0:
+        N_mc = N_res
+    else:
+        N_mc = np.round(N_res * g_mem).astype(np.int)
+    # number of PCs in responding population
+    N_pc = N_res - N_mc
+
+    # extract MC and PC energies
+    MC_en = np.random.choice(MC.en, size=N_mc, replace=MC.N_cells() < N_mc)
+    PC_en = np.random.choice(PC.en, size=N_pc, replace=PC.N_cells() < N_pc)
+
+    # construct responders pop
+    resp_pop = MC.create_empty()
+    resp_pop.en = np.concatenate([MC_en, PC_en])
+
+    return resp_pop
+
+
+def det_responders(MC, PC, g_mem, N_res):
+    '''
+    Generates a mixture of MC and PC populations, with fraction g_mem of memory
+    cells.
+
+    Args:
+    - MC, PC: (det_pop objects): memory and plasma cell populations collected
+        during the immunization scheme
+    - g_mem (float): memory cell fraction of the responder population.
+    - N_res (int): size of the responder population.
+
+    Returns:
+    - resp_pop (det_pop object): responder population
+    '''
+    # create a new population from a copy of the MC pop
+    resp_pop = MC.create_copy_without_kernel()
+    # set population size
+    resp_pop.N = N_res
+    # perform weighted average
+    resp_pop.varphi = MC.varphi * g_mem + PC.varphi * (1. - g_mem)
+
+    return resp_pop
