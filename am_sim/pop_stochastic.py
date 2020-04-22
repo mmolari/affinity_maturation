@@ -98,7 +98,7 @@ class stoch_pop:
         '''
         assert not self.tct, \
             'clonotype tracing is not well-defined if new cells are added'
-        self.en = np.concatenate(self.en, pop_add.en)
+        self.en = np.concatenate([self.en, pop_add.en])
 
     def duplicate(self):
         '''

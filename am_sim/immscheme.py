@@ -59,6 +59,14 @@ def simulate_immscheme(sim_type, D_inj, T_delay, meas_prot, par):
         raise Exception(
             'simulation sim_type must be either stochastic or deterministic')
 
+    # if all dosages are zero then return naive population
+    if np.all(C_inj == 0):
+        resp_pop = pop_class(par)
+        return resp_pop
+    elif np.any(C_inj == 0):
+        raise Exception('warning: one of the dosages is zero. This case is not\
+        defined in the model')
+
     # instantiate empty MC / PC populations
     MC_tot, PC_tot = pop_class.create_empty(par), pop_class.create_empty(par)
 
@@ -67,8 +75,8 @@ def simulate_immscheme(sim_type, D_inj, T_delay, meas_prot, par):
     GC_list = [GC_1]
     # parameters for next injection
     next_inj_id = 1
-    next_inj_T = C_inj[next_inj_id]
-    next_inj_C = T_inj[next_inj_id]
+    next_inj_T = T_inj[next_inj_id]
+    next_inj_C = C_inj[next_inj_id]
 
     # --- simulate immunization scheme ---
 
@@ -83,8 +91,8 @@ def simulate_immscheme(sim_type, D_inj, T_delay, meas_prot, par):
             # add it to the list of existing GCs
             GC_list.append(new_GC)
             # setup next injection if there is one left to do
+            next_inj_id += 1
             if next_inj_id < N_inj:
-                next_inj_id += 1
                 next_inj_T = C_inj[next_inj_id]
                 next_inj_C = T_inj[next_inj_id]
             else:
@@ -103,3 +111,8 @@ def simulate_immscheme(sim_type, D_inj, T_delay, meas_prot, par):
                                    g_mem, sim_type,
                                    N_res=par['N_i'])
     return resp_pop
+
+
+def simulate_immscheme_from_dset(sim_type, par, dset):
+    # TODO: implement this wrapper
+    pass

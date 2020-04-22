@@ -69,6 +69,8 @@ class germinal_center:
             # evolve concentration accordingly
         elif self.state == 'mature':  # if it is mature instead
             NB = self.pop.N_cells()
+        elif self.state == 'extinct':  # if extinct N cells should be zero
+            NB = self.pop.N_cells()
         self.ag.evolve(NB=NB)
 
     def __evolve_mature(self):
