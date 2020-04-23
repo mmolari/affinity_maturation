@@ -74,15 +74,19 @@ class dataset:
         str_repr += f'meas_protocol : {self.meas_prot}\n'
         str_repr += f'N_tot_meas    : {self.all_en().size}\n'
         for n_mouse, mouse_en in enumerate(self.en):
-            str_repr += f'N_meas_mouse_{n_mouse}: {self.en[n_mouse].size}\n'
+            str_repr += f'N_meas_mouse_{n_mouse}: {mouse_en.size}\n'
         return str_repr
 
     def __repr__(self):
         '''
-        Creates a string representation for the dataset object, reporting
+        Creates a short string representation for the dataset object, reporting
         details of the immunization scheme and number of measurements.
         '''
-        return str(self)
+        str_repr = f'D : {str(self.D_inj):<15} '
+        str_repr += f'T : {str(self.T_delay):<15} '
+        str_repr += f'mp : {self.meas_prot:<4} '
+        str_repr += f'N : {self.all_en().size}\n'
+        return str_repr
 
     def save(self, filename):
         '''

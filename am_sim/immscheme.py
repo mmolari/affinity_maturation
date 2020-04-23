@@ -73,11 +73,14 @@ def simulate_immscheme(sim_type, D_inj, T_delay, meas_prot, par):
     # initialize first GC performing first injection
     GC_1 = germinal_center(GC_type=sim_type, par=par, C_inj=C_inj[0], t_inj=0)
     GC_list = [GC_1]
-    # parameters for next injection
+    # parameters for next injection (if any)
     next_inj_id = 1
-    next_inj_T = T_inj[next_inj_id]
-    next_inj_C = C_inj[next_inj_id]
-
+    if next_inj_id < N_inj:
+        next_inj_T = T_inj[next_inj_id]
+        next_inj_C = C_inj[next_inj_id]
+    else:
+        next_inj_T = None
+        next_inj_C = None
     # --- simulate immunization scheme ---
 
     while GC_1.t_days <= t_end:
@@ -111,8 +114,3 @@ def simulate_immscheme(sim_type, D_inj, T_delay, meas_prot, par):
                                    g_mem, sim_type,
                                    N_res=par['N_i'])
     return resp_pop
-
-
-def simulate_immscheme_from_dset(sim_type, par, dset):
-    # TODO: implement this wrapper
-    pass
