@@ -4,3 +4,4 @@ from .pop_stochastic import stoch_pop
 from .pop_deterministic import det_pop
 from .germinal_center import germinal_center
 from .immscheme import simulate_immscheme
+from .dataset import dataset
