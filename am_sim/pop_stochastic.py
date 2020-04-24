@@ -1,6 +1,6 @@
 import numpy as np
 
-from .utils import pick_founders_en, generate_stoch_mutations
+from .utils import pick_founders_en, generate_stoch_mutations, resize_to_exp_limits_stoch
 
 
 class stoch_pop:
@@ -241,3 +241,17 @@ class stoch_pop:
             return self.en.mean()
         else:
             return None
+
+    def mean_en_exp(self):
+        '''
+        returns the mean binding energy of the population evaluated taking into
+        account the experimental sensitivity range. It returns None if the
+        range is empty.
+        '''
+        # declare a function to filter data in utils
+        # TODO: implement
+        pass
+
+    def r_haff_exp(self):
+        # TODO: implement
+        pass

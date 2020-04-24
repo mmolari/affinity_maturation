@@ -5,6 +5,8 @@ import numpy as np
 import scipy.stats as sps
 import copy
 
+from .model_parameters import high_en_exp_cutoff, low_en_exp_cutoff
+
 
 # --- meta-dictionary
 
@@ -316,3 +318,61 @@ def det_responders(MC, PC, g_mem, N_res):
     resp_pop.varphi = MC.varphi * g_mem + PC.varphi * (1. - g_mem)
 
     return resp_pop
+
+# --- experimental limits
+
+
+def resize_to_exp_limits_det(det_pf):
+    '''
+    Given a deterministic population function it returns a modified version
+    that takes into account the experimental limitations. In particular the
+    distribution is normalized considering only the part between the high and
+    low experimental sensitivity. Moreover the high-affinity part is
+    concentrated on the high-affinity sensitivity limit.
+
+    Args:
+    - det_pf (det_pop object): determinisitc population function to resize and
+        renormalize.
+
+    Returns:
+    - res_x (list of float): resized domain of the binding energy distribution
+    - res_dx (float): new discretization step
+    - res_varphi (list of float): renormalized binding energy distribution
+    '''
+    # redefine the domain between the high and low experimental limits
+    # maintaining a similar discretization size
+    n_int = int((high_en_exp_cutoff - low_en_exp_cutoff) // det_pf.dx + 1)
+    res_x = np.linspace(low_en_exp_cutoff, high_en_exp_cutoff, n_int)
+    res_dx = res_x[1] - res_x[0]
+    # interpolate in the restricted interval
+    res_varphi = np.interp(res_x, det_pf.x, det_pf.varphi)
+    # evaluate the probability of too high affinity
+    mask = det_pf.x < low_en_exp_cutoff
+    high_aff_prob = np.sum(det_pf.varphi[mask]) * det_pf.dx
+    # add this probability to the last bin of the distribution
+    res_varphi[0] += high_aff_prob / res_dx
+    # renormalize the restricted distribution
+    res_varphi /= np.sum(res_varphi) * res_dx
+    # return domain, discretization and varphi
+    return res_x, res_dx, res_varphi
+
+
+def resize_to_exp_limits_stoch(st_pop):
+    '''
+    Given a stochastic population functions it returns energies as detected by
+    the experimental protocol. In particular it removes energies higher than
+    the experimental cutoff, and sets the one lower than the low cutoff equal
+    to the cutoff.
+
+    Args:
+    - st_pop (stoch_pop object): stochastic population to analyze
+
+    Returns:
+    - rest_en (array of float): list of energies representing the outcome of
+        a simulated experimental measurement.
+    '''
+    # set the energies of cells with en > low exp cutoff equal to the cutoff
+    rest_en = np.maximum(st_pop.en, low_en_exp_cutoff)
+    # remove all the cells with energies higher than the high cutoff
+    rest_en = rest_en[rest_en <= high_en_exp_cutoff]
+    return rest_en

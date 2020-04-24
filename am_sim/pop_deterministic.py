@@ -1,6 +1,7 @@
 import numpy as np
 
-from .utils import gaussian_pdf, mutation_kernel
+from .utils import gaussian_pdf, mutation_kernel, resize_to_exp_limits_det
+from .model_parameters import low_en_exp_cutoff, high_en_exp_cutoff, low_en_threshold
 
 
 class det_pop:
@@ -124,7 +125,7 @@ class det_pop:
         if self.N > 0:
             # weight of the normalized distribution sum
             w = self.N / (self.N + pop_add.N)
-            # merge distributions
+            # merge distributions and renormalize
             self.varphi = self.varphi * w + pop_add.varphi * (1. - w)
             # add up sizes
             self.N += pop_add.N
@@ -236,5 +237,39 @@ class det_pop:
         norm = np.sum(self.varphi) * self.dx
         if norm > 0:
             return np.dot(self.x, self.varphi) * self.dx / norm
+        else:
+            return None
+
+    def mean_en_exp(self):
+        '''
+        returns the mean binding energy of the population evaluated taking into
+        account the experimental sensitivity range. It returns None if the
+        range is empty.
+        '''
+        # restrict to experimental sensitivity range
+        x, dx, vp = resize_to_exp_limits_det(self)
+        # evaluate norm of the function in the interval (should be one)
+        norm = np.sum(vp) * dx
+        if norm > 0:
+            return np.dot(x, vp) * dx / norm
+        else:
+            return None
+
+    def r_haff_exp(self):
+        '''
+        returns the high affinity fraction for the population evaluated taking
+        into account the experimental sensitivity range. It returns None if the
+        range is empty.
+        '''
+        # restrict to experimental sensitivity range
+        x, dx, vp = resize_to_exp_limits_det(self)
+        # evaluate norm of the function in the full interval (should be one)
+        norm = np.sum(vp) * dx
+        # evaluate high affinity part
+        mask = x <= low_en_threshold
+        h_aff = np.sum(vp[mask]) * dx
+        # return high affinity fraction
+        if norm > 0:
+            return h_aff / norm
         else:
             return None

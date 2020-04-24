@@ -153,6 +153,9 @@ dmypy.json
 # do not add any notebook unless specified
 *.ipynb
 
+# do not add pickle files unless specified
+*.pkl
+
 # do not add any figure
 *.pdf
 *.png
