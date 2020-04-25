@@ -1,139 +1,180 @@
 import numpy as np
+import copy
 import multiprocessing as mpc
-from copy import deepcopy
-import functools as fct
+import pandas as pd
 
-from .inference_utils import init_search_directory, initialize_layers
-from .inference_utils import save_initial_setup, dset_list_logl
-from .inference_utils import generate_variated_parlist
-
-
-def parallel_tempering(dset_list, par_i, n_layers, T_max,
-                       pars_to_mutate, save_folder, verbose=True,
-                       beta_list=None, mut_strength_list=None,
-                       mut_single_list=None):
-    '''
-    # TODO: add parameter to save only the final result?
-    Describe requirements on parameters passed
-    - order of temperatures and other parameters
-
-    Describe all files produced
-    - save search setup
-    - save initial parameters
-    - save list of datasets
-    - save all parameters change
-    - save best parameter
-
-    Args:
-    - dset_list
-    - par_i
-    - n_layers
-    - beta_arr
-    - T_max
-    - pars_to_mutate
-    - save_folder (string): folder in which to save all the search parameters.
-        For precaution it must be an empty or non-existent folder. In the
-        latter case it will be created.
-    '''
-
-    # if save folder does not exists create it
-    print('Initializing directory')
-    init_search_directory(save_folder)
-
-    # initialize layers and search parameters.
-    print('Initializing layer and evaluating initial logl')
-    par_list, logl_list, par_ids, search_par = initialize_layers(
-        par_i, n_layers, T_max, dset_list, pars_to_mutate,
-        beta_list, mut_strength_list, mut_single_list
-    )
-
-    # save search parameters, dataset and initial parameter choice
-    print('Saving initial parameters, dataset list and search setup')
-    save_initial_setup(dset_list, search_par, save_folder)
-
-    # spawn pool of workers for parallel evaluation
-    n_procs = np.min([n_layers, mpc.cpu_count()])
-    print(f'Generating a pool of {n_procs} workers')
-
-    # define function to evaluate posterior log-likelihood of parameters
-    par_logl_fun = fct.partial(dset_list_logl, dset_list=dset_list)
-
-    with mpc.Pool(processes=n_procs) as pool:
-
-        # start maximization cycle:
-        for t in range(T_max):
-            print(f'round {t + 1} / {T_max}')
-            # produce random parameters
-            new_par_list = generate_variated_parlist(par_list, search_par)
-
-            # in parallel make simulation and evaluate logl (deterministic)
-            new_logl_list = pool.map(par_logl_fun, new_par_list)
-            new_logl_list = np.array(new_logl_list)
-
-            # monte-carlo step to accept variated parameters
-            is_accepted = accept_variated_parameters(
-                logl_list, new_logl_list, betas=search_par['beta'])
-            par_list[is_changed] = new_par_list[is_changed]
-            logl_array[is_changed] = mut_logl_array[is_changed]
-
-            # parallel tempering step to switch layers
-            logl_list, is_switched, order = tempering_layer_switch(
-                logl_list, betas=search_par['beta'])
-            par_array = par_array[order]
-            par_id = par_id[order]
-
-            # save all parameter changes
-
-            # check if found a better likelihood, update best parameters
-
-        pool.close()
-    # at the end of the search save the best parameter set found (+ layer and temp)
+from .inference_utils import init_search_directory, dset_list_logl
+from .inference_utils import save_search_initial_setup
+from .inference_utils import generate_variated_par
+from .inference_utils import mc_accept, mc_switch
 
 
-#
-#
-#     # save pars
-#     print('Saving initial pars...')
-#     save_changed_res(par_array, logl_array, is_changed=np.ones(n_layers, dtype=np.bool),
-#                      is_switched=np.zeros(n_layers, dtype=np.bool),
-#                      savefile_path=savefile_path, round_n=0, sw_order=np.arange(n_layers),
-#                      betas=beta_arr, par_id=par_id)
-#
-#     # spawn pool and start the cycle
-#     with mpc.Pool(processes=n_layers) as pool:
-#
-#         for t in range(T_max):
-#             print(f'round {t}')
-#
-#             # generate mutated params
-#             mut_par_array = generate_mutpar_array(
-#                 par_array, pars_to_mutate, mut_strength_arr, mut_single_arr)
-#
-#             # parallel evaluate logl
-#             mut_logl_array = pool.map(fct.partial(parameter_set_loglikelihood,
-#                                                   dataset=dataset), mut_par_array)
-#             mut_logl_array = np.array(mut_logl_array)
-#
-#             # decide and apply acceptance
-#             is_changed = MC_accept_pars(logl_array, mut_logl_array, beta_arr)
-#             # print(mut_logl_array - logl_array)
-#             # print(mut_logl_array > logl_array)
-#             # print(is_changed)
-#             par_array[is_changed] = mut_par_array[is_changed]
-#             # for nl in range(n_layers):
-#             #     print(np.all([par_array[nl][k] == mut_par_array[nl][k]
-#             #                   for k in par_array[nl].keys()]))
-#             logl_array[is_changed] = mut_logl_array[is_changed]
-#
-#             # decide tempering layer switch
-#             logl_array, is_switched, order = MC_switch_pars(
-#                 logl_array, beta_arr)
-#             par_array = par_array[order]
-#             par_id = par_id[order]
-#
-#             # save params
-#             save_changed_res(par_array, logl_array, is_changed,
-#                              is_switched, savefile_path, t + 1, order,
-#                              beta_arr, par_id)
-#
-#         pool.close()
+class parallel_tempering:
+
+    def __init__(self, dset_list, par_i, n_layers, T_max, pars_to_mutate,
+                 save_folder, beta_list=None, mut_strength_list=None,
+                 mut_single_list=None, save_every=100):
+
+        # if save folder does not exists create it
+        print('Initializing directory')
+        init_search_directory(save_folder)
+
+        # initialize search parameters
+        self.dsets = dset_list  # list of datasets
+        self.n_layers = n_layers  # number of parallel tempering layers
+        self.T_max = T_max  #  maximum number of search steps
+        self.pars_to_mutate = pars_to_mutate  # list of parameters to vary
+        self.save_folder = save_folder  #  save directory
+        self.save_every = save_every  #  number of iteration between two saves
+
+        # list of layer temperatures.
+        if beta_list is None:
+            self.betas = np.logspace(-3, 3, n_layers)[::-1]
+        else:
+            self.betas = np.array(beta_list)
+
+        # mutation strength
+        if mut_strength_list is None:
+            self.mut_str = np.logspace(-2, -1, n_layers)
+        else:
+            self.mut_str = np.array(mut_strength_list)
+
+        # in which layer mutate a single parameter
+        if mut_single_list is None:
+            self.mut_sing = np.zeros(n_layers, dtype=np.bool)
+            self.mut_sing[:(n_layers // 2) + 1] = True
+        else:
+            self.mut_sing = np.array(mut_single_list)
+
+        # initialize layers and save initial setup
+        self.init_layers_and_save(par_i)
+
+    def search(self):
+
+        # initialize empty search history archive
+        self.df = pd.DataFrame()
+
+        # save initial state for all layers
+        print('Saving initial state of all layers')
+        self.history_append_state(t=0, is_accepted=np.ones(self.n_layers),
+                                  is_switched=np.zeros(self.n_layers))
+
+        # define function to evaluate posterior log-likelihood of parameters
+        logl_funct = fct.partial(dset_list_logl, dset_list=self.dsets)
+
+        # spawn pool of workers for parallel evaluation
+        n_procs = np.min([n_layers, mpc.cpu_count()])
+        print(f'Generating a pool of {n_procs} workers')
+
+        with mpc.Pool(processes=n_procs) as pool:
+
+            # start maximization cycle:
+            for t in range(1, T_max + 1):
+                print(f'round {t} / {T_max}')
+
+                # every one hundred iterations save search history
+                if t % self.save_every == 0:
+                    print(f'Save search history at search round t = {t}')
+                    self.save_search_history(t=t)
+
+                # produce random parameters
+                new_pars = self.vary_pars()
+
+                # in parallel make simulation and evaluate logl (deterministic)
+                new_logls = pool.map(logl_funct, new_pars)
+                new_logls = np.array(new_logls)
+
+                # monte-carlo step to accept variated parameters
+                is_accepted = mc_accept(self.logls, new_logls, self.betas)
+                self.pars[is_accepted] = new_pars[is_accepted]
+                self.logls[is_accepted] = new_logls[is_accepted]
+
+                # parallel tempering step to switch layers
+                is_switched, order = mc_switch(self.logls, betas=self.betas)
+                # update the new order
+                self.logls = self.logls[order]
+                self.pars = self.pars[order]
+                self.traj_id = self.traj_id[order]
+
+                # save all parameter changes
+                self.history_append_state(t, is_accepted, is_switched)
+
+            pool.close()
+
+        # save final version of the search history
+        self.save_search_history(t='final')
+
+    def init_layers_and_save(self, par_i):
+
+        # create a list of parameter sets, all equal to the initial one
+        self.pars = [copy.deepcopy(par_i) for _ in range(self.n_layers)]
+        self.pars = np.array(self.pars)
+
+        # evaluate log-likelihood of the initial parameters set
+        logl_0 = dset_list_logl(par_i, self.dsets)
+
+        # initialize array of log-likelihoods
+        self.logls = np.ones(n_layers) * logl_0
+
+        # initialize id of parameter sets
+        self.traj_id = np.arange(n_layers)
+
+        # save search parameters, dataset and initial parameter choice
+        save_search_initial_setup(self)
+
+    def history_append_state(self, t, is_accepted, is_switched):
+        '''
+        # TODO: save on the same pandas database?
+        '''
+        # which parameters have changed since last round
+        is_changed = np.logical_or(is_accepted, is_switched)
+
+        # create a list of parameters that have been updated since last round
+        updated_par_list = []
+        # indices of parameters that have changed
+        idx_ch = np.argwhere(is_changed).flatten()
+        for idx in idx_ch:
+            # create a copy of the parameter and add additional entries
+            # related to the search state
+            par = copy.deepcopy(self.pars[idx])
+            par['logl'] = self.logls[idx]
+            par['layer'] = idx
+            par['temp'] = 1. / self.betas[idx]
+            par['switch'] = is_switched[idx]
+            par['round'] = t
+            par['traj_id'] = self.traj_id[idx]
+            updated_par_list.append(par)
+
+        # append parameters to dataframe
+        self.df.append(updated_par_list, ignore_index=True)
+
+    def save_search_history(self, t):
+        # find the old save if present in the folder
+        files = os.listdir(self.save_folder)
+        files = [f for f in files if f.endswith('search_history.csv')]
+        old_filename = None
+        if len(files) > 0:
+            if len(files) == 1:
+                old_filename = files[0]
+            else:
+                print('WARNING: multiple search_history files in folder.\n' +
+                      'as a precaution not erasing previous history when' +
+                      ' saving the new.')
+        # save current history
+        current_filename = f't_{t}_search_history.csv'
+        self.df.to_csv(os.path.join(self.save_folder, current_filename))
+
+        # remove previous save file if present
+        if old_filename is not None:
+            print(f'Removing old save file: {old_filename}')
+            os.remove(os.path.join(self.save_folder, old_filename))
+
+    def vary_pars(self):
+        new_pars = []
+        for n_par, par in self.pars:
+            new_par = generate_variated_par(par,
+                                            keys_to_mut=self.pars_to_mutate,
+                                            mut_str=self.mut_str,
+                                            mut_sing=self.mut_sing)
+            new_pars.append(new_par)
+        return np.array(new_pars)
