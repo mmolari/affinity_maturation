@@ -12,10 +12,16 @@ from .inference_utils import mc_accept, mc_switch
 
 
 class parallel_tempering:
+    '''
+    Class that implements the likelihood maximization inference procedure.
+    It displays two main methods: the class initializer and the search method.
+    '''
 
     def __init__(self, dset_list, par_i, n_layers, T_max, pars_to_mutate,
                  save_folder, beta_list=None, mut_strength_list=None,
                  mut_single_list=None, save_every=100):
+        '''
+        '''
 
         # if save folder does not exists create it
         print('Initializing directory')
