@@ -102,6 +102,13 @@ def init_search_directory(dir_path):
 
 def save_search_initial_setup(pt):
     '''
+    This function is used by the parallel_tempering class to save the initial
+    state of the search. It saves the initial value of the parameters, the
+    experimental datasets and the search parameters.
+
+    Args:
+    - pt (parallel_tempering object): parallel_tempering object whose initial
+        state must be saved
     '''
     # save initial parameters
     with open(os.path.join(pt.save_folder, 'par_i.pkl'), 'wb') as f:
@@ -129,6 +136,26 @@ def save_search_initial_setup(pt):
 
 
 def generate_variated_par(par, keys_to_mut, mut_str, mut_sing):
+    '''
+    For a given parameter set, this function generates and returns a variated
+    version of the parameters. The variation is performed on the parameters
+    indicated in the 'keys_to_mut' argument. The argument 'mut_str' controls
+    the magnitude of the variation introduced. The argument 'mut_sing' controls
+    wether the variation is done on a randomly picked parameters, or on all at
+    the same time.
+
+    Args:
+    - par: model parameters dictionary starting from which the variation is
+        performed
+    - keys_to_mut (list of str): list of parameters that can be mutated
+    - mut_str (float): parameter that controls the magnitude of the introduced
+        variation
+    - mut_sing (bool): wether to introduce the variation on a single parameter
+        or on all of them at the same time.
+
+    Returns:
+    - par_mut: variated version of the model parameters dictionary
+    '''
     # create copy of the original parameters
     par_mut = copy.deepcopy(par)
 
@@ -166,6 +193,21 @@ def generate_variated_par(par, keys_to_mut, mut_str, mut_sing):
 
 
 def mc_accept(logls, new_logls, betas):
+    '''
+    Function that randomly accepts a parameter change based on the
+    log-likelihood variation introduced and the layers temperature, according
+    to the Monte-Carlo rule.
+
+    Args:
+    - logls (array of floats): list of initial log-likelihood for every layer
+    - new_logls (array of floats): list of log-likelihood of the modified
+        parameters, for every layer
+    - betas (array of floats): list of inverse temperatures for every layer
+
+    Returns:
+    - is_accepted (array of bool): wether the parameter change is accepted for
+        every layer.
+    '''
     rand = np.random.rand(logls.size)
     boltz_fact = betas * (new_logls - logls)
     is_accepted = rand < np.exp(boltz_fact)
@@ -173,6 +215,20 @@ def mc_accept(logls, new_logls, betas):
 
 
 def mc_switch(logls, betas):
+    '''
+    Function that randomly performs the switch between two Monte-Carlo chains
+    according to the parallel tempering algorithm. The switch depends on the
+    log-likelihood and temperature associated to each layer.
+
+    Args:
+    - logls (array of float): log-likelihood of each layer.
+    - betas (array of float): inverse temperature of each layer.
+
+    Returns:
+    - is_switched (array of bool): wether each layer has been switched.
+    - order (array of int): the trajectories order change introduced by the
+        switch.
+    '''
     N = logls.size
     logls_cpy = np.copy(logls)
     order = np.arange(N)

@@ -21,11 +21,15 @@ par_i['alpha_C'] = 0.025
 # load all datasets
 dsets = load_all_datasets()
 
-# setup search parameters
+# setup search parameters:
+# name of the folder in which to save the results
 save_folder = 'inference_search_results'
+# parameters whose maximum-likelihood estimate must be retrieved
 pars_to_mutate = ['k_consumption_per_day', 'mu_i', 'sigma_i',
                   'g_1d', 'g_4d', 'a_selection', 'b_selection', 'alpha_C']
+# number of iterations of the parallel-tempering algorithm
 T_max = 10000
+# number of layers in the parallel-tempering algorithm
 n_layers = 10
 
 # launch search
@@ -37,3 +41,10 @@ inference = ams.parallel_tempering(dset_list=dsets,
                                    save_folder=save_folder,
                                    save_every=100)
 inference.search()
+
+# results will be saved in 'save_folder' in a .csv file, that will be
+# progressively updated during the course of the search. This file contains
+# the value of all parameters updates performed during the search, for all
+# layers of the parallel-tempering algorithm. Each parameter set saved is
+# accompanied by other information such as its log-likelihood, the round at
+# which it was saved, the temperature of the layer to whom it belogns...
