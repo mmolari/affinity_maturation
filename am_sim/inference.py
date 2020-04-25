@@ -1,68 +1,96 @@
 import numpy as np
 import multiprocessing as mpc
 from copy import deepcopy
+import functools as fct
 
-from .utils import dset_logl
+from .inference_utils import init_search_directory, initialize_layers
+from .inference_utils import save_initial_setup, dset_list_logl
+from .inference_utils import generate_variated_parlist
 
 
-def parallel_tempering(dset, par_i, n_layers, beta_arr, T_max, pars_to_mutate,
-                       save_folder=None):
-    # if save_folder create the folder
-    # initialize layers
-    # save all parameters of the search, plus the initial parameter choice
-    # start maximization cycle:
-        # produce random parameters
-        # in parallel make simulation and evaluate logl (deterministic)
-        # randomly decide wether to accept and whether to switch
+def parallel_tempering(dset_list, par_i, n_layers, T_max,
+                       pars_to_mutate, save_folder, verbose=True,
+                       beta_list=None, mut_strength_list=None,
+                       mut_single_list=None):
+    '''
+    # TODO: add parameter to save only the final result?
+    Describe requirements on parameters passed
+    - order of temperatures and other parameters
+
+    Describe all files produced
+    - save search setup
+    - save initial parameters
+    - save list of datasets
+    - save all parameters change
+    - save best parameter
+
+    Args:
+    - dset_list
+    - par_i
+    - n_layers
+    - beta_arr
+    - T_max
+    - pars_to_mutate
+    - save_folder (string): folder in which to save all the search parameters.
+        For precaution it must be an empty or non-existent folder. In the
+        latter case it will be created.
+    '''
+
+    # if save folder does not exists create it
+    print('Initializing directory')
+    init_search_directory(save_folder)
+
+    # initialize layers and search parameters.
+    print('Initializing layer and evaluating initial logl')
+    par_list, logl_list, par_ids, search_par = initialize_layers(
+        par_i, n_layers, T_max, dset_list, pars_to_mutate,
+        beta_list, mut_strength_list, mut_single_list
+    )
+
+    # save search parameters, dataset and initial parameter choice
+    print('Saving initial parameters, dataset list and search setup')
+    save_initial_setup(dset_list, search_par, save_folder)
+
+    # spawn pool of workers for parallel evaluation
+    n_procs = np.min([n_layers, mpc.cpu_count()])
+    print(f'Generating a pool of {n_procs} workers')
+
+    # define function to evaluate posterior log-likelihood of parameters
+    par_logl_fun = fct.partial(dset_list_logl, dset_list=dset_list)
+
+    with mpc.Pool(processes=n_procs) as pool:
+
+        # start maximization cycle:
+        for t in range(T_max):
+            print(f'round {t + 1} / {T_max}')
+            # produce random parameters
+            new_par_list = generate_variated_parlist(par_list, search_par)
+
+            # in parallel make simulation and evaluate logl (deterministic)
+            new_logl_list = pool.map(par_logl_fun, new_par_list)
+            new_logl_list = np.array(new_logl_list)
+
+            # monte-carlo step to accept variated parameters
+            is_accepted = accept_variated_parameters(
+                logl_list, new_logl_list, betas=search_par['beta'])
+            par_list[is_changed] = new_par_list[is_changed]
+            logl_array[is_changed] = mut_logl_array[is_changed]
+
+            # parallel tempering step to switch layers
+            logl_list, is_switched, order = tempering_layer_switch(
+                logl_list, betas=search_par['beta'])
+            par_array = par_array[order]
+            par_id = par_id[order]
+
+            # save all parameter changes
+
+            # check if found a better likelihood, update best parameters
+
+        pool.close()
     # at the end of the search save the best parameter set found (+ layer and temp)
-    pass
+
 
 #
-#
-#
-# def parallel_tempering(dataset, par_0, n_layers, beta_arr, mut_strength_arr, T_max, mut_single_arr,
-#                        pars_to_mutate, savefile_path):
-#
-#     # initialize directory
-#     if os.path.exists(savefile_path):
-#         if not len(os.listdir(savefile_path)) == 0:
-#             raise Exception(f'For safety reasons the user should provide an empty \
-#             or non-existent folder. Insted the specified folder exists and \
-#             contains the following files:\n {os.listdir(savefile_path)}')
-#     else:
-#         os.makedirs(savefile_path, exist_ok=False)
-#
-#     print('Evaluating initial logl...')
-#     # initialize layers
-#     par_array = np.array([copy.deepcopy(par_0) for _ in range(n_layers)])
-#     par_0_logl = parameter_set_loglikelihood(dataset=dataset, par=par_0)
-#     logl_array = np.ones(n_layers) * par_0_logl
-#     par_id = np.arange(n_layers)
-#
-#     # layer zero has lower temperature (highest beta)
-#     beta_order = np.argsort(beta_arr)[::-1]
-#     beta_arr = beta_arr[beta_order]
-#     mut_strength_arr = mut_strength_arr[beta_order]
-#     mut_single_arr = mut_single_arr[beta_order]
-#
-#     # save search parameters
-#     with open(os.path.join(savefile_path, 'search_params.txt'), 'w') as f:
-#         f.write('search params:\n' + str(pars_to_mutate) + '\n')
-#         f.write(f'n rounds = {T_max}\n')
-#         f.write(f'n layers = {n_layers}\n')
-#         f.write(f'temperatures = {beta_arr}\n')
-#         f.write(f'mutate one param at a time = {mut_single_arr}\n')
-#         f.write(f'mut strength = {mut_strength_arr}\n')
-#         f.write(f'avg logl init = {par_0_logl}\n\n')
-#         f.write('parameters initial value:\n----------------------\n')
-#         for key in par_0:
-#             f.write(f'{key:<30} - {par_0[key]}\n')
-#         f.close()
-#
-#     # save the dataset, if needed for future checks
-#     with open(os.path.join(savefile_path, 'dataset.pkl'), 'wb') as f:
-#         pkl.dump(dataset, f)
-#         f.close()
 #
 #     # save pars
 #     print('Saving initial pars...')
