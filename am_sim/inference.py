@@ -63,16 +63,17 @@ class parallel_tempering:
         - beta_list (optional, list of float): list of inverse temperatures per
             layer. If specified it must have the same dimensions of the number
             of layers. If not specified is initialized as log-spaced between
-            10^3 and 10^-3.
+            10^3 and 10^-3. Inverse temperatures should be in decreasing order.
         - mut_strength_list (optional, list of float): values of the parameters
             mutation strength, quantifying the variation magnitude of the
             parameters for each layer. It should be a small number (0.1~0.01).
             If specified it must have the same dimension of the number of
             layers, otherwise it is initialized as log-spaced between 0.1 and
-            0.01.
+            0.01. Mutation strength should be in increasing order.
         - mut_single_list (otpional, list of bool): wether parameters variation
             concerns all search parameters, or one at a time chosen randomly.
-            If specified it must have the same dimension as the
+            If specified it must have the same dimension as the number of
+            layers.
         - save_every (optional, int): number of rounds between two successive
             update of the save-file. Default value is 100.
         '''
@@ -128,8 +129,11 @@ class parallel_tempering:
 
         # save initial state for all layers
         print('Saving initial state of all layers')
-        self.history_append_state(t=0, is_accepted=np.ones(self.n_layers),
-                                  is_switched=np.zeros(self.n_layers))
+        self.history_append_state(
+            t=0,
+            is_accepted=np.ones(self.n_layers, dtype=np.bool),
+            is_switched=np.zeros(self.n_layers, dtype=np.bool)
+        )
 
         # define function to evaluate posterior log-likelihood of parameters
         logl_funct = fct.partial(dset_list_logl, dset_list=self.dsets)
