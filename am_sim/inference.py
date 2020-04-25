@@ -2,6 +2,8 @@ import numpy as np
 import copy
 import multiprocessing as mpc
 import pandas as pd
+import functools as fct
+import os
 
 from .inference_utils import init_search_directory, dset_list_logl
 from .inference_utils import save_search_initial_setup
@@ -47,12 +49,14 @@ class parallel_tempering:
             self.mut_sing = np.array(mut_single_list)
 
         # initialize layers and save initial setup
+        print('Initializing layers')
         self.init_layers_and_save(par_i)
 
     def search(self):
 
         # initialize empty search history archive
-        self.df = pd.DataFrame()
+        self.hist_df = pd.DataFrame()
+        self.temp_hist = []
 
         # save initial state for all layers
         print('Saving initial state of all layers')
@@ -63,24 +67,19 @@ class parallel_tempering:
         logl_funct = fct.partial(dset_list_logl, dset_list=self.dsets)
 
         # spawn pool of workers for parallel evaluation
-        n_procs = np.min([n_layers, mpc.cpu_count()])
+        n_procs = np.min([self.n_layers, mpc.cpu_count()])
         print(f'Generating a pool of {n_procs} workers')
 
         with mpc.Pool(processes=n_procs) as pool:
 
             # start maximization cycle:
-            for t in range(1, T_max + 1):
-                print(f'round {t} / {T_max}')
-
-                # every one hundred iterations save search history
-                if t % self.save_every == 0:
-                    print(f'Save search history at search round t = {t}')
-                    self.save_search_history(t=t)
+            for t in range(1, self.T_max + 1):
+                print(f'round {t} / {self.T_max}')
 
                 # produce random parameters
                 new_pars = self.vary_pars()
 
-                # in parallel make simulation and evaluate logl (deterministic)
+                # in parallel evaluate logl of parameter sets for all layers
                 new_logls = pool.map(logl_funct, new_pars)
                 new_logls = np.array(new_logls)
 
@@ -99,6 +98,11 @@ class parallel_tempering:
                 # save all parameter changes
                 self.history_append_state(t, is_accepted, is_switched)
 
+                # every one hundred iterations save search history
+                if t % self.save_every == 0:
+                    print(f'Save search history at search round t = {t}')
+                    self.save_search_history(t=t)
+
             pool.close()
 
         # save final version of the search history
@@ -114,10 +118,10 @@ class parallel_tempering:
         logl_0 = dset_list_logl(par_i, self.dsets)
 
         # initialize array of log-likelihoods
-        self.logls = np.ones(n_layers) * logl_0
+        self.logls = np.ones(self.n_layers) * logl_0
 
         # initialize id of parameter sets
-        self.traj_id = np.arange(n_layers)
+        self.traj_id = np.arange(self.n_layers)
 
         # save search parameters, dataset and initial parameter choice
         save_search_initial_setup(self)
@@ -129,8 +133,6 @@ class parallel_tempering:
         # which parameters have changed since last round
         is_changed = np.logical_or(is_accepted, is_switched)
 
-        # create a list of parameters that have been updated since last round
-        updated_par_list = []
         # indices of parameters that have changed
         idx_ch = np.argwhere(is_changed).flatten()
         for idx in idx_ch:
@@ -143,13 +145,17 @@ class parallel_tempering:
             par['switch'] = is_switched[idx]
             par['round'] = t
             par['traj_id'] = self.traj_id[idx]
-            updated_par_list.append(par)
 
-        # append parameters to dataframe
-        self.df.append(updated_par_list, ignore_index=True)
+            # add the changes to the temporary history
+            self.temp_hist.append(par)
 
     def save_search_history(self, t):
-        # find the old save if present in the folder
+        # append temporary history to full history database
+        self.hist_df = self.hist_df.append(self.temp_hist, ignore_index=True)
+        # empty temporary history
+        self.temp_hist = []
+
+        # find the old save file if present in the folder
         files = os.listdir(self.save_folder)
         files = [f for f in files if f.endswith('search_history.csv')]
         old_filename = None
@@ -162,7 +168,7 @@ class parallel_tempering:
                       ' saving the new.')
         # save current history
         current_filename = f't_{t}_search_history.csv'
-        self.df.to_csv(os.path.join(self.save_folder, current_filename))
+        self.hist_df.to_csv(os.path.join(self.save_folder, current_filename))
 
         # remove previous save file if present
         if old_filename is not None:
@@ -170,11 +176,13 @@ class parallel_tempering:
             os.remove(os.path.join(self.save_folder, old_filename))
 
     def vary_pars(self):
+        # returns a list of parameters generated from the previous ones with
+        # a small variation
         new_pars = []
-        for n_par, par in self.pars:
+        for n, par in enumerate(self.pars):
             new_par = generate_variated_par(par,
                                             keys_to_mut=self.pars_to_mutate,
-                                            mut_str=self.mut_str,
-                                            mut_sing=self.mut_sing)
+                                            mut_str=self.mut_str[n],
+                                            mut_sing=self.mut_sing[n])
             new_pars.append(new_par)
         return np.array(new_pars)

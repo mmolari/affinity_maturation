@@ -72,7 +72,7 @@ def dset_list_logl(par, dset_list):
         # evalutate the model prediction for the responders population
         resp_pop = responders_from_dset(dset, par, sim_type='deterministic')
         # evaluate the log-likelihood of the data w.r.t. the prediction
-        tot_logl += dset_logl(dset, det_pf)
+        tot_logl += dset_logl(dset, resp_pop)
     # return the total log-likelihood
     return tot_logl
 
@@ -115,13 +115,13 @@ def save_search_initial_setup(pt):
 
     # save search setup
     with open(os.path.join(pt.save_folder, 'search_setup.txt'), 'w') as f:
-        f.write('search params:\n' + str(pt.pars_to_mutate) + '\n')
+        f.write('params to vary:\n' + str(pt.pars_to_mutate) + '\n')
         f.write(f'n rounds = {pt.T_max}\n')
         f.write(f'n layers = {pt.n_layers}\n')
         f.write(f'inverse temperatures = {pt.betas}\n')
-        f.write(f'mutate one param at a time = {pt.mut_sing}\n')
+        f.write(f'mutate one param. at a time = {pt.mut_sing}\n')
         f.write(f'mut strength = {pt.mut_str}\n')
-        f.write(f'avg logl init = {pt.logls[0]}\n\n')
+        f.write(f'initial parameters total logl = {pt.logls[0]}\n\n')
         f.write('parameters initial value:\n----------------------\n')
         for key in pt.pars[0]:
             f.write(f'{key:<30} - {pt.pars[0][key]}\n')
@@ -133,7 +133,7 @@ def generate_variated_par(par, keys_to_mut, mut_str, mut_sing):
     par_mut = copy.deepcopy(par)
 
     # decide which parameters to mutate at each turn
-    if mutate_single:
+    if mut_sing:
         mutate_set = [np.random.choice(keys_to_mut)]
     else:
         mutate_set = list(keys_to_mut)
@@ -142,15 +142,15 @@ def generate_variated_par(par, keys_to_mut, mut_str, mut_sing):
     for k in mutate_set:
         if k in ('f_mem_reinit', 'g_1d', 'g_4d', 'a_selection', 'b_selection'):
             # mutate fractions: random walk, keep between 0 and 1
-            par_mut[k] += (2. * np.random.rand() - 1.) * mut_strength
+            par_mut[k] += (2. * np.random.rand() - 1.) * mut_str
             par_mut[k] = np.min([1., np.max([0., par_mut[k]])])
         elif k in ('sigma_i', 'alpha_C', 'k_consumption_per_day'):
             # mutate positive values: keep > 0
-            par_mut[k] *= 1. + (2. * np.random.rand() - 1.) * mut_strength
+            par_mut[k] *= 1. + (2. * np.random.rand() - 1.) * mut_str
             par_mut[k] = np.max([0., par_mut[k]])
         elif k in ('mu_i', 'eps_B'):
             # mutate real values in the space of binding energy: random walk
-            par_mut[k] += (2. * np.random.rand() - 1.) * 10. * mut_strength
+            par_mut[k] += (2. * np.random.rand() - 1.) * 10. * mut_str
         else:
             raise Exception(
                 f'error while trying to mutate parameter {k}: mutation rule not specified')
@@ -184,7 +184,7 @@ def mc_switch(logls, betas):
         idx_lT = N - n - 2
         # evaluate delta log-likelihood and temperature
         delta_logl = logls_cpy[idx_hT] - logls_cpy[idx_lT]
-        delta_beta = beta_arr[idx_hT] - beta_arr[idx_lT]
+        delta_beta = betas[idx_hT] - betas[idx_lT]
         boltz_fact = - delta_beta * delta_logl
         # randomly accept switch
         if np.random.rand() < np.exp(boltz_fact):
