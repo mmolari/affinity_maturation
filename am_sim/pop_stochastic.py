@@ -1,6 +1,8 @@
 import numpy as np
 
-from .utils import pick_founders_en, generate_stoch_mutations, resize_to_exp_limits_stoch
+from .utils import pick_founders_en, generate_stoch_mutations
+from .utils import apply_exp_limits_to_en_list
+from .utils import r_haff_from_en_list
 
 
 class stoch_pop:
@@ -248,10 +250,27 @@ class stoch_pop:
         account the experimental sensitivity range. It returns None if the
         range is empty.
         '''
-        # declare a function to filter data in utils
-        # TODO: implement
-        pass
+        # apply the experimental limits
+        exp_en = apply_exp_limits_to_en_list(self.en)
+
+        if exp_en.size > 0:
+            return exp_en.mean()
+        else:
+            return None
 
     def r_haff_exp(self):
-        # TODO: implement
-        pass
+        '''
+        It returns the high-affinity fraction of the population, evaluated
+        taking into account experimental detection limits. The high-affinity
+        fraction is defined as the fraction of cells having binding energy
+        lower than 'low_en_threshold'. It returns None if the population, after
+        application of the experimental limits, is empty.
+        '''
+
+        # apply the experimental limits
+        exp_en = apply_exp_limits_to_en_list(self.en)
+
+        if exp_en.size > 0:
+            return r_haff_from_en_list(exp_en)
+        else:
+            return None

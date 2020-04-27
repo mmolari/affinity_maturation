@@ -21,14 +21,17 @@ par_i['alpha_C'] = 0.025
 # load all datasets
 dsets = load_all_datasets()
 
-# setup search parameters:
-# name of the folder in which to save the results
-save_folder = 'inference_search_results'
+# name of the folder in which to save the results.
+# It must be an empty or non-existent folder.
+save_folder = 'reproduce_inference_results'
+
 # parameters whose maximum-likelihood estimate must be retrieved
 pars_to_mutate = ['k_consumption_per_day', 'mu_i', 'sigma_i',
                   'g_1d', 'g_4d', 'a_selection', 'b_selection', 'alpha_C']
+
 # number of iterations of the parallel-tempering algorithm
 T_max = 10000
+
 # number of layers in the parallel-tempering algorithm
 n_layers = 10
 

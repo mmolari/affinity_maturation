@@ -5,7 +5,7 @@ import numpy as np
 import scipy.stats as sps
 import copy
 
-from .model_parameters import high_en_exp_cutoff, low_en_exp_cutoff
+from .model_parameters import high_en_exp_cutoff, low_en_exp_cutoff, low_en_threshold
 
 
 # --- meta-dictionary
@@ -139,8 +139,8 @@ def prob_mc_pc_differentiation(par, t_rounds):
             (1. + np.exp((t_rounds - sw_t) / sigma_t))
         return p_diff * fr_mc, p_diff * (1. - fr_mc)
 
-# --- GC seeding (stochastic GC)
 
+# --- GC seeding (stochastic GC)
 
 def pick_founders_en(par, mc_seed_energies):
     '''
@@ -319,8 +319,8 @@ def det_responders(MC, PC, g_mem, N_res):
 
     return resp_pop
 
-# --- experimental limits
 
+# --- experimental limits
 
 def resize_to_exp_limits_det(det_pf):
     '''
@@ -357,22 +357,46 @@ def resize_to_exp_limits_det(det_pf):
     return res_x, res_dx, res_varphi
 
 
-def resize_to_exp_limits_stoch(st_pop):
+def apply_exp_limits_to_en_list(en_list):
     '''
-    Given a stochastic population functions it returns energies as detected by
-    the experimental protocol. In particular it removes energies higher than
-    the experimental cutoff, and sets the one lower than the low cutoff equal
-    to the cutoff.
+    Given a list of binding energies this function applies the experimental
+    measurement limits on it. It returns a copy of the list in which all
+    energies higher than the experimental detection threshold
+    'high_en_exp_cutoff' are removed, and all energies lower than the
+    experimental threshold 'low_en_exp_cutoff' are set equal to the threshold.
+    NB: the returned array could be empty.
 
     Args:
-    - st_pop (stoch_pop object): stochastic population to analyze
+    - en_list (array of float): list of binding energies.
 
     Returns:
-    - rest_en (array of float): list of energies representing the outcome of
-        a simulated experimental measurement.
+    - exp_en (array of float): list of binding energies with experimental
+        detection limits applied.
     '''
     # set the energies of cells with en > low exp cutoff equal to the cutoff
-    rest_en = np.maximum(st_pop.en, low_en_exp_cutoff)
+    exp_en = np.maximum(en_list, low_en_exp_cutoff)
+
     # remove all the cells with energies higher than the high cutoff
-    rest_en = rest_en[rest_en <= high_en_exp_cutoff]
-    return rest_en
+    exp_en = exp_en[exp_en <= high_en_exp_cutoff]
+
+    return exp_en
+
+# --- high affinity fraction
+
+
+def r_haff_from_en_list(en_list):
+    '''
+    Given a list of energy measurements, this function evaluates the
+    high-affiniy fraction, defined as the fraction of cells with binding energy
+    smaller than 'low_en_threshold'.
+
+    Args:
+    - en_list (array of floats): list of binding energies.
+
+    Returns:
+    - r_haff (float): high affinity fraction.
+    '''
+    # boolean mask: whether the binding energy is lower than the high-affinity
+    # threshold
+    h_aff_mask = np.array(en_list) <= low_en_threshold
+    return h_aff_mask.mean()

@@ -1,8 +1,5 @@
-'''
-Class antigen implements the evolution of Ag concentration.
-'''
-
 import numpy as np
+
 from .utils import next_ag_concentration, metadict_append
 
 

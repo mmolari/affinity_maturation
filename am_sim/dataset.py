@@ -3,6 +3,7 @@ import pandas as pd
 import ast
 
 from .model_parameters import high_en_exp_cutoff, low_en_exp_cutoff
+from .utils import r_haff_from_en_list
 
 
 class dataset:
@@ -148,3 +149,50 @@ class dataset:
         '''
         # return cumulative measurements
         return np.concatenate(self.en)
+
+    def mean_en(self):
+        '''
+        Returns the mean binding energy of the cumulative dataset.
+
+        Returns:
+        - mean_en (float): mean binding energy evaluated over all the
+            measurements in the dataset.
+        '''
+        return self.all_en().mean()
+
+    def mean_en_per_mouse(self):
+        '''
+        Returns a list of the mean binding energies per mouse in the dataset.
+
+        Returns:
+        - mean_ens (list of floats): list of mean binding energies, in the same
+            order as mice in the dataset.
+        '''
+        mean_ens = [mouse_en.mean() for mouse_en in self.en]
+        return mean_ens
+
+    def r_haff(self):
+        '''
+        Returns the high-affinity fraction of cells in the cumulative dataset.
+        The high-affnity fraction is defined as the fraction of cells that have
+        energy lower that the high-affinity threshold 'low_en_threshold'
+        Returns:
+
+        - r_haff (float): high affinity fractions, in the same order as mice in
+            the dataset.
+        '''
+        return r_haff_from_en_list(self.all_en())
+
+    def r_haff_per_mouse(self):
+        '''
+        Returns a list of the high-affinity fraction of cells per mouse in the
+        dataset. The high-affnity fraction is defined as the fraction of cells
+        that have binding energy lower that the high-affinity threshold
+        'low_en_threshold'.
+
+        Returns:
+        - r_haffs (list of floats): list of high affinity fractions, in the
+            same order as mice in the dataset.
+        '''
+        r_haffs = [r_haff_from_en_list(mouse_en) for mouse_en in self.en]
+        return r_haffs
