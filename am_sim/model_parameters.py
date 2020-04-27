@@ -73,7 +73,8 @@ std_par_val = {
     'N_founders': 100,  #  n. of founder clones (only for stochastic sim.)
     # --- simulation energy discretization and limits
     'dx': 0.01,
-    'xlims': [-50, 20],
+    'xlim_minus': -50,
+    'xlim_plus': 20,
     # --- measurement PC/MC mixture
     'g_1d': 0.5723468195195263,  #  MC/PC ratio, measurement 1 day after boost
     'g_4d': 0.0,  # MC/PC ratio, measurement 4 days after injection

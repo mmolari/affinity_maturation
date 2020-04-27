@@ -1,0 +1,47 @@
+params to vary:
+['k_consumption_per_day', 'mu_i', 'sigma_i', 'g_1d', 'g_4d', 'a_selection', 'b_selection', 'alpha_C']
+n rounds = 10000
+n layers = 10
+inverse temperatures = [1.00000000e+03 2.15443469e+02 4.64158883e+01 1.00000000e+01
+ 2.15443469e+00 4.64158883e-01 1.00000000e-01 2.15443469e-02
+ 4.64158883e-03 1.00000000e-03]
+mutate one param. at a time = [ True  True  True  True  True  True False False False False]
+mut strength = [0.01       0.0129155  0.01668101 0.02154435 0.02782559 0.03593814
+ 0.04641589 0.05994843 0.07742637 0.1       ]
+initial parameters total logl = -7993.463424786089
+
+parameters initial value:
+----------------------
+k_decay_per_day                - 0.0122248
+k_consumption_per_day          - 2e-05
+k_release_per_day              - 0.97856
+alpha_C                        - 0.025
+days_per_turn                  - 0.5
+T_GC_formation_days            - 6
+GC_carrying_capacity           - 2500
+f_mem_reinit                   - pop
+ker_xlim                       - 20
+ker_ln_mu                      - 1.9
+ker_ln_sigma                   - 0.5
+ker_ln_offset                  - -3.0
+p_sil_eff                      - 0.9303216913415182
+p_aa_eff                       - 0.02787132346339274
+p_let_eff                      - 0.04180698519508911
+n_duplications                 - 2
+B_sel                          - False
+eps_B                          - -13.59
+T_sel                          - True
+a_selection                    - 0.2
+b_selection                    - 0.2
+diff_prob                      - 0.1
+diff_residual_fraction         - 0.0
+diff_switch_time               - 11
+diff_switch_sigma              - 2
+mu_i                           - -14.6
+sigma_i                        - 1.6
+N_i                            - 2500
+N_founders                     - 100
+dx                             - 0.01
+xlims                          - [-50, 20]
+g_1d                           - 0.5
+g_4d                           - 0.5

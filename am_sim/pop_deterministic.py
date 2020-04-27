@@ -45,10 +45,10 @@ class det_pop:
             reactivated memory and naive cells, according to the weight
             specified in the parameters.
         '''
-        xlims, dx, Ni = par['xlims'], par['dx'], par['N_i']
-        mu_i, sigma_i = par['mu_i'], par['sigma_i']
+        xlim_m, xlim_p, dx = par['xlim_minus'], par['xlim_plus'], par['dx']
+        Ni, mu_i, sigma_i = par['N_i'], par['mu_i'], par['sigma_i']
         # distribution domain and discretization step
-        self.x = np.arange(xlims[0], xlims[1], dx)
+        self.x = np.arange(xlim_m, xlim_p, dx)
         self.dx = dx
         # number of cells in the population
         self.N = Ni
@@ -80,7 +80,7 @@ class det_pop:
         pop = cls.__new__(cls)
         pop.N = 0  #  zero population size
         # create distribution domain according to model parameters.
-        pop.x = np.arange(par['xlims'][0], par['xlims'][1], par['dx'])
+        pop.x = np.arange(par['xlim_minus'], par['xlim_plus'], par['dx'])
         pop.dx = par['dx']
         pop.varphi = np.zeros_like(pop.x)  #  null distribution
         return pop
