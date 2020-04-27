@@ -1,6 +1,7 @@
-import am_sim as ams
-
+import numpy as np
 import os
+
+import am_sim as ams
 
 
 data_dir = 'data'
@@ -32,55 +33,81 @@ def load_all_datasets():
         raise Exception(f'WARNING: could not load file(s): {failed_loading}\n'
                         + 'these files should not be in the data directory.')
 
-    return ds_list
+    return np.array(ds_list)
 
 
-def select_scheme_1_ds(dsets):
-    '''Given the list of datasets it selects only the ones belonging to
-    immunization scheme 1.'''
-
-    # select all datasets with measurement protocol '4d'
-    s1ds = [ds for ds in dsets if ds.meas_prot == '4d']
-    # order by dosage
-    order = np.argsort([ds.D_inj[0] for ds in s1ds])
-    s1ds = np.array(s1ds)[order]
-    return s1ds
-
-
-def select_scheme_2_ds(dsets):
-    '''Given the list of datasets it selects only the ones belonging to
-    immunization scheme 2.'''
-    # select all datasets with measurement protocol '1d'
-    s2ds = [ds for ds in dsets if ds.meas_prot == '1d']
-    # select all datasets with 28 days delay between two injections
-    s2ds = [ds for ds in s2ds if ds.T_delay[0] == 28]
-    # order by dosage
-    order = np.argsort([ds.D_inj[0] for ds in s2ds])
-    s2ds = np.array(s2ds)[order]
-    return s2ds
+def extract_attribute(obj_list, attr, sub_idx=None):
+    '''
+    Utility function to extract an attribute from a list of objects, and return
+    a numpy-array of attributes. The argument 'sub_idx', if specified, selects
+    a sub-element with the given index of the returned attribute.
+    '''
+    attr_list = []  # list containing the specified attribute, to be filled
+    for ob in obj_list:
+        # get the attribute from the object
+        ob_attr = getattr(ob, attr)
+        # if specified then extract the sub-element from the attribute
+        if sub_idx is not None:
+            ob_attr = ob_attr[sub_idx]
+        # add it to the list
+        attr_list.append(ob_attr)
+    # return the list as a numpy array
+    return np.array(attr_list)
 
 
-def select_scheme_3_ds(dsets):
-    '''Given the list of datasets it selects only the ones belonging to
-    immunization scheme 3.'''
-    # select all datasets with measurement protocol '1d'
-    s3ds = [ds for ds in dsets if ds.meas_prot == '1d']
-    # select all datasets with 10 microgram Ag injection in the first injection
-    s3ds = [ds for ds in s3ds if ds.D_inj[0] == 10]
-    # order by injection delay
-    order = np.argsort([ds.T_delay[0] for ds in s3ds])
-    s3ds = np.array(s3ds)[order]
-    return s3ds
+def extract_scheme_info(dsets):
+    '''
+    Given a list of datasets extract and returns as numpy arrays the
+    measurement protocol, the injected Ag dosage and the injection time delay
+    for each dataset.
+
+    Args:
+    - dsets (list of dataset objects): list of datasets whose arguments should
+        be extracted
+
+    Returns:
+    - mp (array of string): list of measurement protocols corresponding to the
+        datasets
+    - D (array of float): list of Ag dosages of the first injection
+    - T (array of int): list of time delays between the firs and second
+        injecitons
+    '''
+    # extract the list of measurement protocols
+    mp = extract_attribute(dsets, 'meas_prot')
+    # of Ag dosage for the first injection
+    D = extract_attribute(dsets, 'D_inj', sub_idx=0)
+    # of time delay between the first two injections
+    T = extract_attribute(dsets, 'T_delay', sub_idx=0)
+    # return the three lists
+    return mp, D, T
 
 
-def select_scheme_ds(dsets, scheme_n):
-    '''Given the list of datasets it selects only the ones belonging to
-    immunization scheme 'scheme_n', where 'scheme_n' is either 1,2 or 3.'''
+def dataset_idxs_by_scheme(dsets, scheme_n):
+    '''
+    Given a list of datasets it returns a list of indices. These indices
+    correspond to the dataset objects that belong to the specified scheme.
+    They are ordered either based on Ag dosage or injection delay, depending on
+    the scheme specified.
+    '''
+    # extract measurement protocol, Ag dosage and delay between injections for
+    # all the datasets in the list. These are returned as np.arrays
+    mp, D, T = extract_scheme_info(dsets)
+
+    # create a mask and an order for the datasets, depending on the
+    # immunization scheme selected
     if scheme_n == 1:
-        return select_scheme_1_ds(dsets)
+        mask = mp == '4d'
+        order = np.argsort(D)
     elif scheme_n == 2:
-        return select_scheme_2_ds(dsets)
+        mask = (mp == '1d') & (T == 28)
+        order = np.argsort(D)
     elif scheme_n == 3:
-        return select_scheme_3_ds(dsets)
+        mask = (mp == '1d') & (D == 10)
+        order = np.argsort(T)
     else:
-        raise Exception('scheme number must be 1,2 or 3')
+        raise Exception('the scheme number must be either 1, 2 or 3.')
+
+    # return a list of selected indices, ordered as specified
+    ordered_mask = mask[order]
+    selected_idx = order[ordered_mask]
+    return selected_idx

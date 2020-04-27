@@ -1,10 +1,10 @@
-# Affinity maturation simulation
+# Affinity maturation simulation
 
 This repository contains the code for the simulations and figures featured in the paper *Quantitative modeling of the effect of antigen dosage on the distribution of B-cell affinities in maturating germinal centers Supplementary Information*, by Marco Molari, Klaus Eyer, Jean Baudry, Simona Cocco, and Rémi Monasson.
 All of the code contained has been written in Python3 (version 3.7.4).
 Dependencies required to run the code include `numpy`, `scipy`, `pandas`, `matplotlib`. Moreover an installation of [jupyter](https://jupyter.org) is needed to run the interactive notebooks.
 
-## Repository structure:
+## Repository structure:
 
 - The folder `am_sim` contains the library with most of the code core functions
 - The folder `data` contains experimental affinity measurements for each immunization scheme. The measurements are saved in a `.csv` file, one per immunization scheme considered. The `.csv` file has an header containing details of the immunization scheme.

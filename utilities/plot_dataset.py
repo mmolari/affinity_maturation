@@ -1,3 +1,5 @@
+import numpy as np
+
 data_color = 'C1'
 
 
@@ -31,6 +33,9 @@ def plot_dset_mean_quantities(ax, dsets, x_variable, qty):
         elif x_variable == 'T':
             # or time delay
             x_ds = ds.T_delay[0]
+        else:
+            raise Exception(
+                f' x_variable must be either \'D\' or \'T\', not {x_variable}')
 
         # plot the average per single mouse
         plot_dset_mice_mean_quantities(ax, ds, x_ds, qty)
