@@ -150,8 +150,6 @@ dmypy.json
 
 # End of https://www.gitignore.io/api/macos,python,jupyternotebooks
 
-# do not add any notebook unless specified
-*.ipynb
 
 # do not add pickle files unless specified
 *.pkl
