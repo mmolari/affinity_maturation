@@ -1,11 +1,27 @@
+import numpy as np
+import copy
+
+from am_sim.model_parameters import high_en_exp_cutoff
+
 detpop_color = 'C0'
 
 
-def plot_detpop_mean_quantities(ax, rp_list, x, qty):
-    y = []
-    for rp in rp_list:
-        if qty == 'en':
-            y.append(rp.mean_en_exp())
-        elif qty == 'r_haff':
-            y.append(rp.r_haff_exp())
-    ax.plot(x, y, c=detpop_color, label='theory', marker='.')
+def plot_exp_normalized_pop(ax, det_pf):
+    '''
+    This function plots the binding energy distribution of the population
+    function on the specified axis. The distribution is normalized only for on
+    the part below the experimental detection range, so that it can be compared
+    with experimental measurements.
+    '''
+    # domain and discretization step
+    x, dx = det_pf.x, det_pf.dx
+    # distribution
+    y = det_pf.varphi
+    # mask to select the range of energies lower than the experimental cutoff
+    norm_mask = x <= high_en_exp_cutoff
+    # normalization factor for the part below-cutoff
+    norm = np.sum(y[norm_mask]) * dx
+    # normalized distribution
+    y_norm = y / norm
+    # plotting function
+    ax.plot(x, y_norm, color=detpop_color, label='theory')

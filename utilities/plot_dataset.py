@@ -83,3 +83,17 @@ def plot_dset_mice_mean_quantities(ax, dset, x_coord, qty):
     # plot as a vertical dashed lines with crosses as markers.
     x = np.ones_like(mean_qty) * x_coord
     ax.plot(x, mean_qty, c=data_color, ls='--', marker='x')
+
+
+def plot_dset_hist(ax, ds, bins):
+    '''
+    This function plots the dataset histogram on the specified axis and with
+    the specified binning.
+
+    Args:
+    - ax: axis object on which the histogram is plotted.
+    - ds (dataset object): dataset object whose energies are to be displayed.
+    - bins (list of floats): desired binning of the histogram.
+    '''
+    ax.hist(ds.all_en(), density=True, bins=bins, alpha=0.4,
+            color=data_color, label='data')
