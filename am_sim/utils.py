@@ -322,28 +322,32 @@ def det_responders(MC, PC, g_mem, N_res):
 
 # --- experimental limits
 
-def prob_low_en_measurement(det_pf):
+def prob_low_det_high_measurement(det_pf):
     '''
-    Given a deterministic population object this function returns the
-    probability of a below-experimental-threshold measurement, which is the
-    probability for a measurement to have energy < low_en_exp_cutoff, given
-    that its energy is detectable and therefore < high_en_exp_cutoff
-
-    Args:
-    - det_pf (det_pop object): determinisitc population function whose left
-        tails must be quantified.
-
-    Returns:
-    - p_low_en (float): probability of a measurement < low_en_exp_cutoff, given
-        that it is < high_en_exp_cutoff.
+    Given a deterministic population this function returns the probability
+    of performing a measurement below, in or above the instrumental sensitivity
+    range. The results does not depend on the size of the population. It
+    returns zero if the binding energy distribution is null.
     '''
-    # evaluate probability that a measurement is detectable
-    mask_detectable = det_pf.x < high_en_exp_cutoff
-    p_detectable = np.sum(det_pf.varphi[mask_detectable])
-    # evaluate probability that a measurement is below low threshold
-    mask_low = det_pf.x < low_en_exp_cutoff
-    p_low = np.sum(det_pf.varphi[mask_low])
-    return p_low / p_detectable
+    # capture variables
+    x, dx, vp = det_pf.x, det_pf.dx, det_pf.varphi
+    # masks for too low and too high energy
+    mask_low = x < low_en_exp_cutoff
+    mask_high = x > high_en_exp_cutoff
+    # probability of low or high measurements
+    p_low = np.sum(vp[mask_low]) * dx
+    p_high = np.sum(vp[mask_high]) * dx
+    # probability of measurement in the detection range
+    p_det = np.sum(vp[(~mask_low) & (~mask_high)]) * dx
+    # total probability, should be one
+    p_tot = np.sum([p_low, p_det, p_high])
+    if p_tot == 0:
+        # if the population is empty, return zero
+        return 0, 0, 0
+    else:
+        # otherwise return the normalized probability of each measurement
+        p_low, p_det, p_high = np.array([p_low, p_det, p_high]) / p_tot
+        return p_low, p_det, p_high
 
 
 def resize_to_exp_limits_det(det_pf):
@@ -363,7 +367,7 @@ def resize_to_exp_limits_det(det_pf):
     # distribution domain and discretization step
     x, dx = det_pf.x, det_pf.dx
     # select the subset of the domain between the experimental sensitivity
-    # limits.
+    # limits. Make sure that the limits are included in the subset.
     mask = (x < (high_en_exp_cutoff + dx)) & (x > (low_en_exp_cutoff - dx))
     # restrict the domain and the distribution
     res_x = x[mask]

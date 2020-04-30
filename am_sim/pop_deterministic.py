@@ -1,7 +1,7 @@
 import numpy as np
 
 from .utils import gaussian_pdf, mutation_kernel, resize_to_exp_limits_det
-from .utils import prob_low_en_measurement
+from .utils import prob_low_det_high_measurement
 from .model_parameters import low_en_exp_cutoff, high_en_exp_cutoff, low_en_threshold
 
 
@@ -244,30 +244,60 @@ class det_pop:
     def mean_en_exp(self):
         '''
         returns the mean binding energy of the population evaluated taking into
-        account the experimental sensitivity range.
+        account the experimental sensitivity range. Returns None if the
+        population distribution is null in the detectable + below detectable
+        range.
         '''
-        # restrict to experimental sensitivity range
-        x, vp = resize_to_exp_limits_det(self)
-        # probability of measurement below low-detection limit
-        p_low = prob_low_en_measurement(self)
-        # mean of in-range measurements
-        mean_in_range = np.dot(x, vp) * self.dx
-        # total mean, considering also below-low-threshold measurements
-        mean_tot = mean_in_range * (1. - p_low) + p_low * low_en_exp_cutoff
-        return mean_tot
+        # evaluate the probability of a measurement being below, in, or above
+        # the instrumental detection range
+        p_low, p_det, p_high = prob_low_det_high_measurement(self)
+        # if no measurement in or below then return None
+        if p_low + p_det < 0:
+            return None
+        # otherwise evaluate the relative contribution of below and in range
+        # measurements
+        rel_p_low = p_low / (p_low + p_det)
+        if rel_p_low == 1:
+            # if no measurement in the detection range, then the mean is simply
+            # the low detection limit
+            return low_en_exp_cutoff
+        else:
+            # otherwise evaluate the average in the detection range.
+            # restrict to experimental sensitivity range and renormalize
+            x, vp = resize_to_exp_limits_det(self)
+            # mean of measurements in detection range
+            mean_det = np.dot(x, vp) * self.dx
+            # correct with below-range measurements
+            mean = mean_det * (1. - rel_p_low) + rel_p_low * low_en_exp_cutoff
+            return mean
 
     def r_haff_exp(self):
         '''
         returns the high affinity fraction for the population evaluated taking
-        into account the experimental sensitivity range.
+        into account the experimental sensitivity range. Returns None if the
+        population distribution is null in the detectable + below detectable
+        range.
         '''
-        # restrict to experimental sensitivity range
-        x, vp = resize_to_exp_limits_det(self)
-        # evaluate high affinity part
-        mask = x <= low_en_threshold
-        h_aff = np.sum(vp[mask]) * self.dx
-        # probability of measurement below low-detection limit
-        p_low = prob_low_en_measurement(self)
-        # correct for measurements below low-detection limit
-        h_aff = h_aff * (1. - p_low) + p_low
-        return h_aff
+        # evaluate the probability of a measurement being below, in, or above
+        # the instrumental detection range
+        p_low, p_det, p_high = prob_low_det_high_measurement(self)
+        print(p_low, p_det, p_high)
+        # if no measurement in or below then return None
+        if p_low + p_det < 0:
+            return None
+        # otherwise evaluate the relative contribution of below and in range
+        # measurements
+        rel_p_low = p_low / (p_low + p_det)
+        if rel_p_low == 1:
+            # if only measurements below range then return one
+            return 1.
+        else:
+            # otherwise evaluate the in-range high-affinity fraction
+            # restrict to experimental sensitivity range and renormalize
+            x, vp = resize_to_exp_limits_det(self)
+            # evaluate high affinity fraction in detectable range
+            mask = x <= low_en_threshold
+            h_aff_det = np.sum(vp[mask]) * self.dx
+            # correct for measurements below low-detection limit
+            h_aff = h_aff_det * (1. - rel_p_low) + rel_p_low * 1.
+            return h_aff
