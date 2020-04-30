@@ -1,6 +1,7 @@
 import numpy as np
 
 from .utils import gaussian_pdf, mutation_kernel, resize_to_exp_limits_det
+from .utils import prob_low_en_measurement
 from .model_parameters import low_en_exp_cutoff, high_en_exp_cutoff, low_en_threshold
 
 
@@ -243,33 +244,30 @@ class det_pop:
     def mean_en_exp(self):
         '''
         returns the mean binding energy of the population evaluated taking into
-        account the experimental sensitivity range. It returns None if the
-        range is empty.
+        account the experimental sensitivity range.
         '''
         # restrict to experimental sensitivity range
-        x, dx, vp = resize_to_exp_limits_det(self)
-        # evaluate norm of the function in the interval (should be one)
-        norm = np.sum(vp) * dx
-        if norm > 0:
-            return np.dot(x, vp) * dx / norm
-        else:
-            return None
+        x, vp = resize_to_exp_limits_det(self)
+        # probability of measurement below low-detection limit
+        p_low = prob_low_en_measurement(self)
+        # mean of in-range measurements
+        mean_in_range = np.dot(x, vp) * self.dx
+        # total mean, considering also below-low-threshold measurements
+        mean_tot = mean_in_range * (1. - p_low) + p_low * low_en_exp_cutoff
+        return mean_tot
 
     def r_haff_exp(self):
         '''
         returns the high affinity fraction for the population evaluated taking
-        into account the experimental sensitivity range. It returns None if the
-        range is empty.
+        into account the experimental sensitivity range.
         '''
         # restrict to experimental sensitivity range
-        x, dx, vp = resize_to_exp_limits_det(self)
-        # evaluate norm of the function in the full interval (should be one)
-        norm = np.sum(vp) * dx
+        x, vp = resize_to_exp_limits_det(self)
         # evaluate high affinity part
         mask = x <= low_en_threshold
-        h_aff = np.sum(vp[mask]) * dx
-        # return high affinity fraction
-        if norm > 0:
-            return h_aff / norm
-        else:
-            return None
+        h_aff = np.sum(vp[mask]) * self.dx
+        # probability of measurement below low-detection limit
+        p_low = prob_low_en_measurement(self)
+        # correct for measurements below low-detection limit
+        h_aff = h_aff * (1. - p_low) + p_low
+        return h_aff

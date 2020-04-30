@@ -9,9 +9,11 @@ def plot_error_area(ax, stoch_pop_avgs_list, N_GCs, x):
     '''
     This function plots on the specified axis the confidence interval for
     stochastic simulations. The interval is plotted as a green shaded area,
-    spanning one standard deviation above and below the mean. The standard
-    deviation is corrected with the square root of the number of GCs that we
-    expect to measure.
+    spanning one standard deviation above and below the mean. Two shaded
+    intervals are plotted. One corresponds to the standard deviation of the
+    simulation set, the other one corresponds to the standard deviation of the
+    average over N_GCs simulations. These correspond roughly to the number of
+    GCs we expect to contribute to the measure.
 
     Args:
     - ax: ax object on which to plot.
@@ -23,19 +25,26 @@ def plot_error_area(ax, stoch_pop_avgs_list, N_GCs, x):
         lists in stoch_pop_avgs_list.
     '''
     # containers for means and standard deviations
-    means, stds = [], []
+    means, stds, stds_corrected = [], [], []
     # cycle through all the stochastic simulation sets
     for avgs in stoch_pop_avgs_list:
         # for every set evaluate the mean and standard deviation
         means.append(np.mean(avgs))
-        # the standard deviation is normalized by the square root of the
-        # number of GCs considered
-        stds.append(np.std(avgs) / np.sqrt(N_GCs))
+        # standard deviation for the single immunization scheme
+        stds.append(np.std(avgs))
+        # standard deviation for corrected for 20 germinal centers
+        stds_corrected.append(np.std(avgs) / np.sqrt(N_GCs))
     # transform the lists in numpy arrays.
-    means, stds = np.array(means), np.array(stds)
+    means = np.array(means)
+    stds, stds_corrected = np.array(stds), np.array(stds_corrected)
     # color the area one standard deviation above and below the mean
     ax.fill_between(x, means - stds, means + stds,
-                    color=stochpop_color, alpha=0.3, label='stoch. sim')
+                    color=stochpop_color, alpha=0.1,
+                    label='stoch. sim - single simulation')
+    # same but using the corrected standard deviation, and with a darker shade
+    ax.fill_between(x, means - stds_corrected, means + stds_corrected,
+                    color=stochpop_color, alpha=0.3,
+                    label=f'stoch. sim - mean of {N_GCs} simulations')
 
 
 def plot_stoch_avg_energy_distr_exp_norm(ax, stoch_pops, bins):

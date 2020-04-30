@@ -322,13 +322,35 @@ def det_responders(MC, PC, g_mem, N_res):
 
 # --- experimental limits
 
+def prob_low_en_measurement(det_pf):
+    '''
+    Given a deterministic population object this function returns the
+    probability of a below-experimental-threshold measurement, which is the
+    probability for a measurement to have energy < low_en_exp_cutoff, given
+    that its energy is detectable and therefore < high_en_exp_cutoff
+
+    Args:
+    - det_pf (det_pop object): determinisitc population function whose left
+        tails must be quantified.
+
+    Returns:
+    - p_low_en (float): probability of a measurement < low_en_exp_cutoff, given
+        that it is < high_en_exp_cutoff.
+    '''
+    # evaluate probability that a measurement is detectable
+    mask_detectable = det_pf.x < high_en_exp_cutoff
+    p_detectable = np.sum(det_pf.varphi[mask_detectable])
+    # evaluate probability that a measurement is below low threshold
+    mask_low = det_pf.x < low_en_exp_cutoff
+    p_low = np.sum(det_pf.varphi[mask_low])
+    return p_low / p_detectable
+
+
 def resize_to_exp_limits_det(det_pf):
     '''
-    Given a deterministic population function it returns a modified version
-    that takes into account the experimental limitations. In particular the
-    distribution is normalized considering only the part between the high and
-    low experimental sensitivity. Moreover the high-affinity part is
-    concentrated on the high-affinity sensitivity limit.
+    Given a deterministic population function it restricts its domain between
+    the experimental detection limits and renormalizes it. The restricted
+    domain and distribution are returned.
 
     Args:
     - det_pf (det_pop object): determinisitc population function to resize and
@@ -336,25 +358,20 @@ def resize_to_exp_limits_det(det_pf):
 
     Returns:
     - res_x (list of float): resized domain of the binding energy distribution
-    - res_dx (float): new discretization step
     - res_varphi (list of float): renormalized binding energy distribution
     '''
-    # redefine the domain between the high and low experimental limits
-    # maintaining a similar discretization size
-    n_int = int((high_en_exp_cutoff - low_en_exp_cutoff) // det_pf.dx + 1)
-    res_x = np.linspace(low_en_exp_cutoff, high_en_exp_cutoff, n_int)
-    res_dx = res_x[1] - res_x[0]
-    # interpolate in the restricted interval
-    res_varphi = np.interp(res_x, det_pf.x, det_pf.varphi)
-    # evaluate the probability of too high affinity
-    mask = det_pf.x < low_en_exp_cutoff
-    high_aff_prob = np.sum(det_pf.varphi[mask]) * det_pf.dx
-    # add this probability to the last bin of the distribution
-    res_varphi[0] += high_aff_prob / res_dx
-    # renormalize the restricted distribution
-    res_varphi /= np.sum(res_varphi) * res_dx
-    # return domain, discretization and varphi
-    return res_x, res_dx, res_varphi
+    # distribution domain and discretization step
+    x, dx = det_pf.x, det_pf.dx
+    # select the subset of the domain between the experimental sensitivity
+    # limits.
+    mask = (x < (high_en_exp_cutoff + dx)) & (x > (low_en_exp_cutoff - dx))
+    # restrict the domain and the distribution
+    res_x = x[mask]
+    res_varphi = det_pf.varphi[mask]
+    # renormalize the distribution on the restricted domain
+    res_varphi /= (np.sum(res_varphi) * dx)
+    # return the results
+    return res_x, res_varphi
 
 
 def apply_exp_limits_to_en_list(en_list):

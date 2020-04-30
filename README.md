@@ -38,4 +38,4 @@ Here I give a short overview of the main classes and functions contained in the 
 - [ ] Clean up README
 - [ ] Check code documentation
 - [ ] Describe how to run the inference and what are the results
-- [ ] Describe
+- [ ] Find the best way to load large stochastic simulation file (download it from somewhere else?) and change the notebooks accordingly. Probably git large files versioning.

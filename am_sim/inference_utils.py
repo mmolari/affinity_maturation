@@ -21,7 +21,7 @@ def dset_logl(dset, det_pf):
     - logl (float): total log-likelihood of the data given the model.
     '''
     # resize population function to experimental sensitivity limits
-    x, dx, vp = resize_to_exp_limits_det(det_pf)
+    x, vp = resize_to_exp_limits_det(det_pf)
     # interpolate restricted varphi on experimental measurements
     exp_en = dset.all_en()
     likl = np.interp(exp_en, x, vp, left=0, right=0)
@@ -210,6 +210,9 @@ def mc_accept(logls, new_logls, betas):
     '''
     rand = np.random.rand(logls.size)
     boltz_fact = betas * (new_logls - logls)
+    # set a maximum on boltzmann factor to avoid exponent overflow. The result
+    # is the same anyways
+    boltz_fact = np.minimum(boltz_fact, 1.)
     is_accepted = rand < np.exp(boltz_fact)
     return is_accepted
 
@@ -243,7 +246,8 @@ def mc_switch(logls, betas):
         delta_beta = betas[idx_hT] - betas[idx_lT]
         boltz_fact = - delta_beta * delta_logl
         # randomly accept switch
-        if np.random.rand() < np.exp(boltz_fact):
+        rand = np.random.rand()
+        if boltz_fact > 0 or rand < np.exp(boltz_fact):
             # if accepted invert likelihood and update order
             logls_cpy[idx_hT], logls_cpy[idx_lT] = logls_cpy[idx_lT], logls_cpy[idx_hT]
             order[idx_hT], order[idx_lT] = order[idx_lT], order[idx_hT]
