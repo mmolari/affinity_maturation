@@ -328,6 +328,14 @@ def prob_low_det_high_measurement(det_pf):
     of performing a measurement below, in or above the instrumental sensitivity
     range. The results does not depend on the size of the population. It
     returns zero if the binding energy distribution is null.
+
+    Args:
+    - det_pf (det_pop object): deterministic population function for which the
+        probabilities must be computed.
+
+    Returns:
+    - p_low, p_det, p_high (floats): probability of respectively low, in-range
+        or high measurement.
     '''
     # capture variables
     x, dx, vp = det_pf.x, det_pf.dx, det_pf.varphi
