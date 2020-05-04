@@ -8,7 +8,7 @@ inverse temperatures = [1.00000000e+03 2.15443469e+02 4.64158883e+01 1.00000000e
 mutate one param. at a time = [ True  True  True  True  True  True False False False False]
 mut strength = [0.01       0.0129155  0.01668101 0.02154435 0.02782559 0.03593814
  0.04641589 0.05994843 0.07742637 0.1       ]
-initial parameters total logl = -7993.463424786089
+initial parameters total logl = -7832.831205293161
 
 parameters initial value:
 ----------------------
@@ -42,6 +42,7 @@ sigma_i                        - 1.6
 N_i                            - 2500
 N_founders                     - 100
 dx                             - 0.01
-xlims                          - [-50, 20]
+xlim_minus                     - -50
+xlim_plus                      - 20
 g_1d                           - 0.5
 g_4d                           - 0.5
