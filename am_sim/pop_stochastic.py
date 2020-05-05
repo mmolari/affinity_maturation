@@ -172,10 +172,11 @@ class stoch_pop:
         - par: model parameters dictionary
         '''
         N_en = self.en.size  # population current size
-        if N_en > par['GC_carrying_capacity']:
+        CC = par['GC_carrying_capacity']  #  carrying capacity
+        if N_en > CC:
             # randomly select the id of cells that will be kept
             surv_id = np.random.choice(
-                np.arange(self.en.size), size=par['GC_carrying_capacity'], replace=False)
+                np.arange(self.en.size), size=CC, replace=False)
             mask_in = np.zeros_like(self.en, dtype=np.bool)
             mask_in[surv_id] = True
             self.keep_only(mask_in)

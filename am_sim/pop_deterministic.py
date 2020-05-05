@@ -281,7 +281,7 @@ class det_pop:
         # evaluate the probability of a measurement being below, in, or above
         # the instrumental detection range
         p_low, p_det, p_high = prob_low_det_high_measurement(self)
-        print(p_low, p_det, p_high)
+
         # if no measurement in or below then return None
         if p_low + p_det < 0:
             return None
