@@ -154,7 +154,7 @@ dmypy.json
 # do not add pickle files unless specified
 *.pkl
 
-# do not add any figure
+# do not add any figure unless explicitly specified
 *.pdf
 *.png
 *.svg

@@ -95,13 +95,13 @@ def check_shifted_distribution_L1_convergence(x, vp_list, threshold):
 
 def asymptotic_phi_and_u(C_const, par_to_copy, T_max,
                          sigma_min_dist=5, u_phi_relative_update=5e-5,
-                         L1_norm_threshold=5e-5):
+                         L1_norm_threshold=5e-5, xlim_m=-100, xlim_p=50):
 
     par = copy.deepcopy(par_to_copy)
 
     # extend simulation domain and change discretization
-    par['xlim_minus'] = -100
-    par['xlim_plus'] = 50
+    par['xlim_minus'] = xlim_m
+    par['xlim_plus'] = xlim_p
 #    par['dx'] = 0.01
     # initialize the distribution to a standard gaussian
     par['mu_i'] = 0
@@ -109,16 +109,21 @@ def asymptotic_phi_and_u(C_const, par_to_copy, T_max,
 
     # initialize population
     pop = ams.det_pop(par)
+    pop.N = 1.  #  set the population to one
+    #  ad an attribute to the population: the logarithm of N
+    pop.logN = np.log(pop.N)
+    # this helps keeping track of the size of the population under exponential
+    # expansion
 
     # containers for results
-    N, avg_eps, vp = [], [], []
+    logN, avg_eps, vp = [], [], []
     u, phi = [], []
 
     # binding energy distribution domain
     x = pop.x
 
     # append results
-    N.append(pop.N_cells())
+    logN.append(pop.logN)
     avg_eps.append(pop.mean_en())
     vp.append(np.copy(pop.varphi))
 
@@ -126,13 +131,24 @@ def asymptotic_phi_and_u(C_const, par_to_copy, T_max,
 
         # evolve one round
         asymptotic_pop_evo(pop, par, C_const)
+        # update logN and reset N
+        pop.logN += np.log(pop.N)
+        pop.N = 1.
 
         # append results
-        N.append(pop.N_cells())
+        logN.append(pop.logN)
         avg_eps.append(pop.mean_en())
         vp.append(np.copy(pop.varphi))
-        phi.append(np.log(N[-1] / N[-2]))
+        phi.append(logN[-1] - logN[-2])
         u.append(avg_eps[-1] - avg_eps[-2])
+
+        # TODO: remove
+        # if t > 100 and t % 100 == 0:
+        #     print(t, logN[-1], np.gradient(u)[-1] / u[-1],
+        #           np.gradient(phi)[-1] / phi[-1])
+        #     plt.plot(pop.x, pop.varphi)
+        #     plt.xlim(avg_eps[-1] - 10, avg_eps[-1] + 10)
+        #     plt.show()
 
         # check for convergence only after at least 10 rounds of evolution
         if t < 100:
@@ -147,35 +163,36 @@ def asymptotic_phi_and_u(C_const, par_to_copy, T_max,
 
         # if all are satisfied then break and return the results
         if domain_check and phi_u_check and L1_norm_check:
-            print(
-                f'Successful convergence to the desired precision after {t} iterations')
+            print('Successful convergence to the desired precision ' +
+                  f'after {t} iterations')
 
             # plot to remove
-            fig, ax = plt.subplots(2, 2, sharex=True, figsize=(5, 4))
-            ax[0, 0].plot(phi)
-            ax[0, 0].set_ylabel(r'$\phi$')
-            ax[0, 0].axhline(0, c='k')
-            ax[0, 1].plot(u)
-            ax[0, 1].set_ylabel(r'$u$')
-            ax[0, 1].axhline(0, c='k')
-            ax[1, 0].plot(np.log(N))
-            ax[1, 0].set_ylabel(r'$\log N$')
-            ax[1, 1].plot(avg_eps)
-            ax[1, 1].set_ylabel(r'$\langle \epsilon \rangle$')
-            plt.tight_layout()
-            plt.show()
-
-            plt.plot(x - avg_eps[-1], vp[-1])
-            plt.plot(x - avg_eps[-3], vp[-3])
-            plt.plot(x - avg_eps[-5], vp[-5])
-            plt.xlim(-10, 30)
-            plt.show()
+            # fig, ax = plt.subplots(2, 2, sharex=True, figsize=(5, 4))
+            # ax[0, 0].plot(phi)
+            # ax[0, 0].set_ylabel(r'$\phi$')
+            # ax[0, 0].axhline(0, c='k')
+            # ax[0, 1].plot(u)
+            # ax[0, 1].set_ylabel(r'$u$')
+            # ax[0, 1].axhline(0, c='k')
+            # ax[1, 0].plot(np.log(N))
+            # ax[1, 0].set_ylabel(r'$\log N$')
+            # ax[1, 1].plot(avg_eps)
+            # ax[1, 1].set_ylabel(r'$\langle \epsilon \rangle$')
+            # plt.tight_layout()
+            # plt.show()
+            #
+            # plt.plot(x - avg_eps[-1], vp[-1])
+            # plt.plot(x - avg_eps[-3], vp[-3])
+            # plt.plot(x - avg_eps[-5], vp[-5])
+            # plt.xlim(-10, 30)
+            # plt.show()
 
             return phi[-1], u[-1]
         elif not domain_check:
             # if borders are broken then print warning of not convergence
-            print(
-                'Warning: the distribution reached the borders of the simulation domain.')
+            print('Warning: the distribution reached the borders of' +
+                  f' the simulation domain at iteration t = {t}.')
+
             # and return None
             return None, None
 
