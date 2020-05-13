@@ -51,7 +51,7 @@ std_par_val = {
     'n_duplications': 2,  # number of dupl. (and therefore mut.) per round
     # --- B-selection
     'B_sel': False,
-    'eps_B': -13.59,
+    'eps_B': -13.6,
     # --- T-selection
     'T_sel': True,
     'a_selection': 0.1332447195425596,  # selection permissivity
