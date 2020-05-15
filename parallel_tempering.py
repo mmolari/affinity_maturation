@@ -50,4 +50,4 @@ inference.search()
 # the value of all parameters updates performed during the search, for all
 # layers of the parallel-tempering algorithm. Each parameter set saved is
 # accompanied by other information such as its log-likelihood, the round at
-# which it was saved, the temperature of the layer to whom it belogns...
+# which it was saved, the temperature of the layer to whom it belogns etc.

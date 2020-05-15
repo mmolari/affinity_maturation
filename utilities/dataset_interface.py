@@ -1,10 +1,11 @@
 import numpy as np
 import os
+from pathlib import Path
 
 import am_sim as ams
 
 
-data_dir = 'data'
+data_dir = Path('data')
 
 
 def load_all_datasets():
