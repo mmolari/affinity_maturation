@@ -2,7 +2,9 @@
 
 This repository contains the code for the simulations and figures featured in the paper *Quantitative modeling of the effect of antigen dosage on the distribution of B-cell affinities in maturating germinal centers Supplementary Information*, by Marco Molari, Klaus Eyer, Jean Baudry, Simona Cocco, and Rémi Monasson.
 For any question please write to <marco.molari@phys.ens.fr>.
+
 All of the code contained has been written in Python3 (version 3.7.4).
+
 Dependencies required to run the code include `numpy`, `scipy`, `pandas`, `matplotlib`. Moreover an installation of [jupyter](https://jupyter.org) is needed to run the `*.ipynb` notebooks.
 
 ## Repository structure:
@@ -28,20 +30,12 @@ The results of our inference procedure, needed for the figures of the paper, is 
 
 To produce the figures of the paper
 
-## Format of the data
+## Format of the data
 
 The measurements are saved in a `.csv` file, one per immunization scheme and condition considered. The `.csv` file has an header containing details of the immunization scheme (injected antigen dosage in micrograms per injection, delays between injections and between injection and measurements, measurement protocol used) and each column contains data for a different mouse.
 
-## `am_sim` library structure
+## code documentation
 
-Here I give a short overview of the main classes and functions contained in the `am_sim` library. For a more detailed description one should refer directly to the code, which is well-commented.
+If you are interested in using the code for germinal center simulations or applying the inference procedure to your data, here is a documentation page with more details on how to use the code.
 
-- `st_par` :
-- `antigen` :
-- `stoch_pop` :
-- `det_pop` :
-- `germinal_center` :
-- `simulate_immscheme` :
-- `dataset` :
-- `responders_from_dset` :
-- `parallel_tempering` :
+Please if you do so remember to cite our paper.
