@@ -10,7 +10,10 @@ data_dir = Path('data')
 
 def load_all_datasets():
     '''
-    This function loads all the datasets contained in the data_dir
+    This function loads all the datasets contained in the data directory.
+
+    Returns:
+    - ds_list (np.array) : list of dataset objects.
     '''
     # list all the .txt files in the data directory
     files = os.listdir(data_dir)
@@ -42,6 +45,15 @@ def extract_attribute(obj_list, attr, sub_idx=None):
     Utility function to extract an attribute from a list of objects, and return
     a numpy-array of attributes. The argument 'sub_idx', if specified, selects
     a sub-element with the given index of the returned attribute.
+
+    Args:
+    - obj_list (list): list of objects from whose attribute should be extracted.
+    - attr (str): name of the attribute to extract.
+    - sub_idx (int, optional): to be used when the extracted attribute is a
+        list. In this case it returns the item with the specified sub-index.
+
+    Returns:
+    - attr_list (numpy array): numpy array of extracted attributes.
     '''
     attr_list = []  # list containing the specified attribute, to be filled
     for ob in obj_list:
@@ -89,6 +101,14 @@ def dataset_idxs_by_scheme(dsets, scheme_n):
     correspond to the dataset objects that belong to the specified scheme.
     They are ordered either based on Ag dosage or injection delay, depending on
     the scheme specified.
+
+    Args:
+    - dsets (list): list of datasets.
+    - scheme_n (int): number of the desired immunization scheme.
+
+    Returns:
+    - selected_idx (list of int): list of indices of the datasets selected,
+        that belong to the specified immunization scheme.
     '''
     # extract measurement protocol, Ag dosage and delay between injections for
     # all the datasets in the list. These are returned as np.arrays

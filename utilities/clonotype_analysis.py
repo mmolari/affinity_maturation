@@ -75,6 +75,16 @@ def ctype_cmap(v_min, v_max, en_founders):
     its founder clones 'en_founders'. The color scale varies between v_min and
     v_max, and a ScalarMappable object containing details on the colorbar is
     returned.
+
+    Args:
+    - v_min, v_max (floats): minimum and maximum binding energy of the
+        colorscale.
+    - en_founders (list): list of founders binding energies.
+
+    Returns:
+    - colors (list): list of colors assigned to each founder clone.
+    - mapp (ScalarMappable object): ScalarMappable object, can be used to build
+        a colorbar.
     '''
     # pick the colormap
     cmap = plt.get_cmap('jet')
@@ -91,8 +101,13 @@ def add_text_max_frequency(ctype_count_df, ax):
     '''
     This function adds a text on the axis specifying the final fraction of the
     population represented by the most expanded clonal family. It takes as
-    argument the axis on which to plot and the database of clone counts
-    over time
+    argument the axis on which to plot and the dataframe of clone counts
+    over time.
+
+    Args:
+    - ctype_count_df (pandas DataFrame object): pandas dataframe containing the
+        clone count over time.
+    - ax (ax object): ax on which the text is added.
     '''
     # evaluate the final population fraction
     ctype_n_final = ctype_count_df.to_numpy()[-1]
