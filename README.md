@@ -21,14 +21,14 @@ Dependencies required to run the code include `numpy`, `scipy`, `pandas`, `matpl
 
 The results of our inference procedure, needed for the figures of the paper, is already present in the folder `inferece_results`. However one can reproduce these results by launching the python script `parallel_tempering.py`. This script will automatically create a new folder, named `reproduce_inference_results` in which the results will be saved. The new folder will contain the following files:
 
-- `search_setup.txt` : a text file containing details on the initial setup of the search procedure.
+- `search_setup.txt` : a text file containing details on the initial setup of the search procedure, including a list of the initial model parameters value.
 - `t_*_search_history.csv` : a pandas dictionary containing the results of the search up to time t. It is updated every 100 parallel tempering steps.
-- `par_i.pkl` : a pickle file containing a dictionary with the initial values of all model parameters in the search.
-- `dataset_list.pkl` : a pickle file containing the list of the datasets of which the likelihood is evaluated. These are all the datasets contained in `data`, and this file is produced only as a safety check.
+- `par_i.pkl` : a pickle file containing a dictionary with the initial values of all model parameters in the search, produced as a safety check.
+- `dataset_list.pkl` : a pickle file containing the list of the datasets of which the likelihood is evaluated. These are all the datasets contained in the `data` folder, and this file is produced only as a safety check.
 
 ## Reproducing the figures of the paper
 
-To produce the figures of the paper please run the corresponding `figure_*.ipynb` jupyter notebook. Some of the figures require intensive stochastic simulations. In this case the user has the choice of skipping the notebook cell containing the simulations and load pre-generated results from the next cell. If
+To produce the figures of the paper please run the corresponding `figure_*.ipynb` jupyter notebook. Some of the figures require running time-intensive stochastic simulations. In this case the user has the choice of skipping the notebook cell containing the simulations and load pre-generated results from the next cell.
 
 For a quick preview of the figures and notebooks:
 
@@ -47,6 +47,3 @@ The measurements are saved in `.csv` files, one per immunization scheme and cond
 
 The rest of the `.csv` file contains a table. Each column corresponds to a different mouse. Entries consist in single-cell affinity measurements. The measured quantity is the antibody dissociation constant Kd, measured in nano-Molar units. For details on the experimental technique used to obtain the measurements please refer to [*Eyer, Klaus, et al. "Single-cell deep phenotyping of IgG-secreting cells for high-resolution immune monitoring." Nature biotechnology 35.10 (2017): 977.*](https://www.nature.com/articles/nbt.3964)
 
-## Code documentation
-
-If you are interested in using the code for your own immunization simulations, or in applying the inference procedure to your data, here is a documentation page with more details on how to use the code. Please if you do so remember to cite our paper. If you have questions feel free to send us an [e-mail](mailto:marco.molari@phys.ens.fr).
