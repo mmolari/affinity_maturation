@@ -30,10 +30,10 @@ low_en_exp_cutoff = np.log(0.1e-9)
 std_par_val = {
     # --- Ag dynamics
     'k_decay_per_day': 1.22248e-2,
-    'k_consumption_per_day': 2.0681836905240632e-05,
+    'k_consumption_per_day': 2.0664491210220598e-05,
     'k_release_per_day': 0.97856,
     # conversion factor Ag. C to dosage, in unit of micrograms of Ag
-    'alpha_C': 0.024705238382797094,
+    'alpha_C': 0.02251841057006763,
     # --- GC time specifications
     'days_per_turn': 0.5,  #  days per turn
     'T_GC_formation_days': 6,
@@ -51,11 +51,11 @@ std_par_val = {
     'n_duplications': 2,  # number of dupl. (and therefore mut.) per round
     # --- B-selection
     'B_sel': False,
-    'eps_B': -13.6,
+    'eps_B': -13.59,
     # --- T-selection
     'T_sel': True,
-    'a_selection': 0.1332447195425596,  # selection permissivity
-    'b_selection': 0.6609819950474214,  # selection additional rejection rate
+    'a_selection': 0.11980624471882932,  # selection permissivity
+    'b_selection': 0.6613446219950894,  # selection additional rejection rate
     # --- differentiation
     # differentiation probability (MC + PC)
     'diff_prob': 0.1,
@@ -67,8 +67,8 @@ std_par_val = {
     # width of the sigmoid in days
     'diff_switch_sigma': 2,
     # --- initial naive cell distribution
-    'mu_i': -14.625558761797766,
-    'sigma_i': 1.6552173695143662,
+    'mu_i': -14.59387180800652,
+    'sigma_i': 1.661288953177667,
     'N_i': 2500,
     'N_founders': 100,  #  n. of founder clones (only for stochastic sim.)
     # --- simulation energy discretization and limits
@@ -76,7 +76,7 @@ std_par_val = {
     'xlim_minus': -50,
     'xlim_plus': 20,
     # --- measurement PC/MC mixture
-    'g_1d': 0.5723468195195263,  #  MC/PC ratio, measurement 1 day after boost
+    'g_1d': 0.5591246767438458,  #  MC/PC ratio, measurement 1 day after boost
     'g_4d': 0.0,  # MC/PC ratio, measurement 4 days after injection
 }
 
