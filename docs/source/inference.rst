@@ -1,12 +1,12 @@
 Run the inference on your data
 ==============================
 
-In our library we include an implementation of the `Paralle Tempering <par_temp_>`_ algorithm to perform the inference of model parameters on experimental data. More details on the implementation can be found in [Molari2020]_.
+In our library we include an implementation of the `Paralle Tempering <par_temp_wiki_>`_ algorithm to perform the inference of model parameters on experimental data. More details on the implementation can be found in [Molari2020]_.
 
 Run the inference algorithm
 ___________________________
 
-The inference is performed through the use of the class :class:`~am_sim.parallel_tempering`. An object of this class is created by passing to the constructor the search parameters (see the signature of the :meth:`~am_sim.parallel_tempering.__init__` method). The search is then performed by executing the method :meth:`~am_sim.parallel_tempering.search`.
+The inference is performed through the use of the class :class:`~am_sim.parallel_tempering`. An object of this class is created by passing to the constructor the search parameters (see the signature of the :meth:`~am_sim.parallel_tempering.__init__` method). The search is then performed by executing the method :meth:`~am_sim.parallel_tempering.search` or :meth:`~am_sim.parallel_tempering.search_parallel`. The only difference between the two methdos is that the latter is parallelized with the use of the ``multiprocessing`` library.
 
 Here is an example of use::
 
@@ -30,7 +30,26 @@ Here is an example of use::
     # ---------- perform the search
     partemp_inference.search()
 
-The :meth:`~am_sim.parallel_tempering.search` method is parallelized with the use of the ``multiprocessing`` library. As it runs on the terminal the iteration number is printed. At the beginning the method initializes a new folder in which results are saved, as specified by the ``save_folder`` argument. The specified folder must be empty or non-existent to avoid overwriting existing results. The algorithm produces many files. The two main ones are :file:`search_setup.txt`, that contains details on the search setup and the initial values of the parameters, and :file:`t_*_search_history.csv`, where at the place of ``*`` the iteration time at which the file was produced is printed. This file is progressively updated during the search every 100 iterations (see parameter ``save_every`` in :meth:`~am_sim.parallel_tempering.__init__`). This file consist of a ``.csv`` table in which each entry corresponds to a set of values of the model parameters for a particular layer and a particular time. Each entry also includes the value of the log-likelihood associate to the parameters set, the round at which the parameters set was saved and details of the parallel tempering layer that generated it.
+As it runs on the terminal the iteration number is printed. At the beginning the method initializes a new folder in which results are saved, as specified by the ``save_folder`` argument. This folder must be empty or non-existent to avoid overwriting existing results. The algorithm produces many files. The two main ones are :file:`search_setup.txt`, that contains details on the search setup and the initial values of the parameters, and :file:`t_*_search_history.csv`, where at the place of ``*`` the iteration time at which the file was produced is printed. This file is progressively updated during the search every 100 iterations (see parameter ``save_every`` in :meth:`~am_sim.parallel_tempering.__init__`). This file consist of a ``.csv`` table in which each entry corresponds to a set of values of the model parameters for a particular layer and a particular time. Each entry also includes the value of the log-likelihood associate to the parameters set, the round at which the parameters set was saved and details of the parallel tempering layer that generated it.
+
+.. _ifmain_note:
+
+.. note::
+
+    When using the :meth:`~am_sim.parallel_tempering.search_parallel` method, as an additional caution the main script should be preceded by the ``if __name__ == '__main__'`` clause, to make sure that the code is executed only by the main thread (see for example the :file:`parallel_tempering.py` `file <github_partemp_>`_ )::
+
+        # do all the imports
+        import am_sim
+
+        # part to be executed by the main thread
+        if __name__ == '__main__':
+
+            # ... your code here ...
+
+            # run parallel tempering search
+            partemp_inference.search()
+
+
 
 Recover the parameters maximum-likelihood estimate
 __________________________________________________
@@ -58,7 +77,7 @@ Here is a non-exhaustive description of the class, containing only the main meth
 
 .. class:: parallel_tempering
 
-    This class contains the implementation of the `Parallel Tempering <par_temp_>`_ algorithm, used to infer the value of model parameters from experimental data.
+    This class contains the implementation of the `Parallel Tempering <par_temp_wiki_>`_ algorithm, used to infer the value of model parameters from experimental data.
 
     .. method:: __init__(dset_list, par_i, n_layers, T_max, pars_to_mutate, save_folder, [beta_list=None, mut_strength_list=None, mut_single_list=None, save_every=100])
 
@@ -84,10 +103,17 @@ Here is a non-exhaustive description of the class, containing only the main meth
 
     .. method:: search()
 
-        This method performs the parallel tempering search. The search is parallelized with the use of the ``multiprocessing`` library. Results are saved in the specified ``save_folder`` argument passed to the class initializer. They are stored in a ``.csv`` file that is iteratively updated during the search, named :file:`t_*_search_history.csv`. This function also saves the search setup parameters in a :file:`search_setup.txt` file.
+        This method performs the parallel tempering search. Results are saved in the specified ``save_folder`` argument passed to the class initializer. They are stored in a ``.csv`` file that is iteratively updated during the search, named :file:`t_*_search_history.csv`. This function also saves the search setup parameters in a :file:`search_setup.txt` file.
 
-.. _par_temp: https://en.wikipedia.org/wiki/Parallel_tempering
+    .. method:: search_parallel()
+
+        This method is analogous to the :meth:`~am_sim.parallel_tempering.search` method, the only difference being that it is parallelized with the use of the ``multiprocessing`` library. Because of this one should add some additional specifications when using it in a script, see `this note <ifmain_note_>`_.
+
+
+.. _par_temp_wiki: https://en.wikipedia.org/wiki/Parallel_tempering
 
 .. _Pandas: https://pandas.pydata.org/docs/getting_started/index.html
 
 .. _partemp_file: https://github.com/mmolari/affinity_maturation/blob/master/am_sim/inference.py
+
+.. _github_partemp: https://github.com/mmolari/affinity_maturation/blob/master/parallel_tempering.py

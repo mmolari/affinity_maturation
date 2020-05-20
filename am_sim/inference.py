@@ -14,15 +14,17 @@ from .inference_utils import mc_accept, mc_switch
 class parallel_tempering:
     '''
     Class that implements the likelihood maximization inference procedure.
-    It displays two main methods: the class initializer and the search method.
+    It displays three main methods: the class initializer and two search method.
 
     The initializer methods creates an empty folder in the specified location,
     in which it saves the search parameters (search_setup.txt), the
     experimental datasets (dataset_list.pkl) and the initial value of the
     model parameters (par_i.pkl).
 
-    The search method is parallelized and implements the parallel termpering
-    technique to find the maximum-likelihood value of the model parameters.
+    The only difference between the two search methods is that the
+    search_parallel method is parallelized with the use of the multiprocessing
+    library. Both methods implement the parallel termpering technique to find
+    the maximum-likelihood value of the model parameters.
     During the search results are progressively saved in a csv file, whose name
     ends with 'search_history.csv'. This file stores all the updates of all
     the parameters for every layer. Next to each parameter set also other
@@ -113,7 +115,7 @@ class parallel_tempering:
         print('Initializing layers')
         self.init_layers_and_save(par_i)
 
-    def search(self):
+    def search_parallel(self):
         '''
         Search function. This function launches the likelihood-maximization
         algorithm. The algorithm is parallel and runs on a number of cores
@@ -176,6 +178,63 @@ class parallel_tempering:
                     self.save_search_history(t=t)
 
             pool.close()
+
+        # save final version of the search history
+        self.save_search_history(t='final')
+
+    def search(self):
+        '''
+        Search function. This function launches the likelihood-maximization
+        algorithm. Every 'save_every' number of rounds all the
+        parameters variation for all the layers are saved in a csv file
+        whose name ends in 'search_history.csv'.
+        '''
+
+        # initialize empty search history archive
+        self.hist_df = pd.DataFrame()
+        self.temp_hist = []
+
+        # save initial state for all layers
+        print('Saving initial state of all layers')
+        self.history_append_state(
+            t=0,
+            is_accepted=np.ones(self.n_layers, dtype=np.bool),
+            is_switched=np.zeros(self.n_layers, dtype=np.bool)
+        )
+
+        # define function to evaluate posterior log-likelihood of parameters
+        logl_funct = fct.partial(dset_list_logl, dset_list=self.dsets)
+
+        # start maximization cycle:
+        for t in range(1, self.T_max + 1):
+            print(f'round {t} / {self.T_max}')
+
+            # produce random parameters
+            new_pars = self.vary_pars()
+
+            # evaluate logl of parameter sets for all layers
+            new_logls = [logl_funct(par_set) for par_set in new_pars]
+            new_logls = np.array(new_logls)
+
+            # monte-carlo step to accept variated parameters
+            is_accepted = mc_accept(self.logls, new_logls, self.betas)
+            self.pars[is_accepted] = new_pars[is_accepted]
+            self.logls[is_accepted] = new_logls[is_accepted]
+
+            # parallel tempering step to switch layers
+            is_switched, order = mc_switch(self.logls, betas=self.betas)
+            # update the new order
+            self.logls = self.logls[order]
+            self.pars = self.pars[order]
+            self.traj_id = self.traj_id[order]
+
+            # save all parameter changes
+            self.history_append_state(t, is_accepted, is_switched)
+
+            # every one hundred iterations save search history
+            if t % self.save_every == 0:
+                print(f'Save search history at search round t = {t}')
+                self.save_search_history(t=t)
 
         # save final version of the search history
         self.save_search_history(t='final')
