@@ -4,7 +4,7 @@
 
 # Affinity maturation simulation
 
-This repository contains the code for the simulations and figures featured in the paper *Quantitative modeling of the effect of antigen dosage on the distribution of B-cell affinities in maturating germinal centers*, by Marco Molari, Klaus Eyer, Jean Baudry, Simona Cocco, and Rémi Monasson.
+This repository contains the code for the simulations and figures featured in the paper [*Quantitative modeling of the effect of antigen dosage on the distribution of B-cell affinities in maturating germinal centers*](https://elifesciences.org/articles/55678), by Marco Molari, Klaus Eyer, Jean Baudry, Simona Cocco, and Rémi Monasson, currently available on eLife.
 Please don't forget to cite this paper if you use the code for your project.
 For questions concerning the code please write to <marco.molari@phys.ens.fr>.
 
